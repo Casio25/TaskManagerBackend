@@ -1,0 +1,246 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+}
+
+enum TaskStatus {
+  NEW
+  IN_PROGRESS
+  SUBMITTED
+  HELP_REQUESTED
+  COMPLETED
+  DECLINED
+}
+
+enum SubmissionType {
+  SUBMISSION
+  HELP_REQUEST
+}
+
+enum SubmissionStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ProjectRole {
+  ADMIN
+  MEMBER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+model User {
+  id            Int                   @id @default(autoincrement())
+  email         String                @unique
+  password      String
+  name          String
+  role          Role                  @default(MEMBER)
+  projects      Project[]             @relation("ProjectsCreated")
+  tasks         Task[]                @relation("AssignedTasks")
+  ownedGroups   Group[]               @relation("AdminGroups")
+  submissions   Submission[]
+  profRatings   ProfessionalRating[]
+  ratings       Rating[]
+  groups        UserGroup[]
+  projectMemberships ProjectMember[]
+  sentGroupInvitations GroupInvitation[] @relation("GroupInvitesSent")
+  acceptedGroupInvitations GroupInvitation[] @relation("GroupInvitesAccepted")
+  sentProjectInvitations ProjectInvitation[] @relation("ProjectInvitesSent")
+  acceptedProjectInvitations ProjectInvitation[] @relation("ProjectInvitesAccepted")
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model Group {
+  id        Int      @id @default(autoincrement())
+  name      String
+  adminId   Int
+  admin     User     @relation("AdminGroups", fields: [adminId], references: [id])
+  users     UserGroup[]
+  projects  Project[]
+  tasks     Task[]
+  invitations GroupInvitation[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserGroup {
+  id      Int   @id @default(autoincrement())
+  userId  Int
+  groupId Int
+  user    User  @relation(fields: [userId], references: [id])
+  group   Group @relation(fields: [groupId], references: [id])
+  @@unique([userId, groupId])
+}
+
+model Project {
+  id            Int                   @id @default(autoincrement())
+  name          String
+  description   String?
+  creatorId     Int
+  creator       User                  @relation("ProjectsCreated", fields: [creatorId], references: [id])
+  groupId       Int?
+  group         Group?                @relation(fields: [groupId], references: [id])
+  tasks         Task[]
+  ratings       Rating[]
+  members       ProjectMember[]
+  invitations   ProjectInvitation[]
+  deadline      DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model Task {
+  id              Int                   @id @default(autoincrement())
+  title           String
+  description     String?
+  projectId       Int
+  project         Project               @relation(fields: [projectId], references: [id])
+  parentTaskId    Int?
+  parentTask      Task?                 @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks        Task[]                @relation("SubTasks")
+  assignedToId    Int?
+  assignedTo      User?                 @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedGroupId Int?
+  assignedGroup   Group?                @relation(fields: [assignedGroupId], references: [id])
+  themeId         Int?
+  theme           Theme?                @relation(fields: [themeId], references: [id])
+  status          TaskStatus            @default(NEW)
+  deadline        DateTime?
+  submissions     Submission[]
+  tags            TaskTag[]
+  ratings         Rating[]
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model Tag {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  tasks     TaskTag[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskTag {
+  id      Int   @id @default(autoincrement())
+  taskId  Int
+  tagId   Int
+  task    Task  @relation(fields: [taskId], references: [id])
+  tag     Tag   @relation(fields: [tagId], references: [id])
+  @@unique([taskId, tagId])
+}
+
+model Submission {
+  id              Int                   @id @default(autoincrement())
+  taskId          Int
+  task            Task                  @relation(fields: [taskId], references: [id])
+  userId          Int
+  user            User                  @relation(fields: [userId], references: [id])
+  type            SubmissionType
+  status          SubmissionStatus      @default(PENDING)
+  content         String?
+  ratingId        Int?                  @unique
+  rating          Rating?               @relation(fields: [ratingId], references: [id])
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model Rating {
+  id              Int                   @id @default(autoincrement())
+  quality         Int                   // 1-10
+  timeliness      Int                   // 1-10
+  comments        String?
+  userId          Int?
+  user            User?                 @relation(fields: [userId], references: [id])
+  projectId       Int?
+  project         Project?              @relation(fields: [projectId], references: [id])
+  taskId          Int?
+  task            Task?                 @relation(fields: [taskId], references: [id])
+  submission      Submission?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+}
+
+model ProfessionalRating {
+  id              Int                   @id @default(autoincrement())
+  userId          Int
+  user            User                  @relation(fields: [userId], references: [id])
+  themeId         Int
+  theme           Theme                 @relation(fields: [themeId], references: [id])
+  rating          Float
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
+  @@unique([userId, themeId])
+}
+
+model Theme {
+  id            Int                   @id @default(autoincrement())
+  name          String                @unique
+  tasks         Task[]
+  profRatings   ProfessionalRating[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  projectId Int
+  userId    Int
+  role      ProjectRole @default(MEMBER)
+  project   Project     @relation(fields: [projectId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([projectId, userId])
+}
+
+model GroupInvitation {
+  id           Int               @id @default(autoincrement())
+  email        String
+  groupId      Int
+  group        Group             @relation(fields: [groupId], references: [id])
+  invitedById  Int
+  invitedBy    User              @relation("GroupInvitesSent", fields: [invitedById], references: [id])
+  tokenHash    String            @unique
+  status       InvitationStatus  @default(PENDING)
+  expiresAt    DateTime?
+  acceptedById Int?
+  acceptedBy   User?             @relation("GroupInvitesAccepted", fields: [acceptedById], references: [id])
+  acceptedAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}
+
+model ProjectInvitation {
+  id           Int               @id @default(autoincrement())
+  email        String
+  projectId    Int
+  project      Project           @relation(fields: [projectId], references: [id])
+  invitedById  Int
+  invitedBy    User              @relation("ProjectInvitesSent", fields: [invitedById], references: [id])
+  tokenHash    String            @unique
+  status       InvitationStatus  @default(PENDING)
+  expiresAt    DateTime?
+  acceptedById Int?
+  acceptedBy   User?             @relation("ProjectInvitesAccepted", fields: [acceptedById], references: [id])
+  acceptedAt   DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+}

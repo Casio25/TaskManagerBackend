@@ -9,7 +9,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GroupsService = void 0;
+exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
 const bcrypt = require("bcryptjs");
@@ -24,41 +24,63 @@ function parseToken(token) {
         throw new common_1.ForbiddenException('Invalid token');
     return { id, secret };
 }
-let GroupsService = class GroupsService {
+let ProjectsService = class ProjectsService {
     prisma;
     constructor(prisma) {
         this.prisma = prisma;
     }
-    async createGroup(userId, dto) {
-        const group = await this.prisma.group.create({
+    async createProject(userId, dto) {
+        let groupId = undefined;
+        if (dto.groupId !== undefined) {
+            const group = await this.prisma.group.findUnique({ where: { id: dto.groupId } });
+            if (!group)
+                throw new common_1.NotFoundException('Group not found');
+            if (group.adminId !== userId) {
+                throw new common_1.ForbiddenException('Only group admin can create a project in this group');
+            }
+            groupId = dto.groupId;
+        }
+        const project = await this.prisma.project.create({
             data: {
                 name: dto.name,
-                adminId: userId,
-                users: {
-                    create: { userId },
+                description: dto.description,
+                creatorId: userId,
+                groupId,
+                members: {
+                    create: {
+                        userId,
+                        role: 'ADMIN',
+                    },
                 },
             },
         });
-        return group;
+        return project;
     }
-    async ensureGroupAdmin(groupId, userId) {
-        const group = await this.prisma.group.findUnique({ where: { id: groupId } });
-        if (!group)
-            throw new common_1.NotFoundException('Group not found');
-        if (group.adminId !== userId)
-            throw new common_1.ForbiddenException('Only group admin allowed');
-        return group;
+    async ensureProjectAdmin(projectId, userId) {
+        const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+        if (!project)
+            throw new common_1.NotFoundException('Project not found');
+        if (project.creatorId === userId)
+            return project;
+        const membership = await this.prisma.projectMember.findUnique({
+            where: { projectId_userId: { projectId, userId } },
+            select: { role: true },
+        });
+        if (!membership || membership.role !== 'ADMIN') {
+            throw new common_1.ForbiddenException('Only project admin allowed');
+        }
+        return project;
     }
-    async createInvite(groupId, invitedById, dto) {
-        await this.ensureGroupAdmin(groupId, invitedById);
+    async createInvite(projectId, invitedById, dto) {
+        await this.ensureProjectAdmin(projectId, invitedById);
         const expiresInDays = dto.expiresInDays ?? 7;
         const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
         const secret = crypto.randomBytes(24).toString('hex');
         const tokenHash = await bcrypt.hash(secret, 10);
-        const invite = await this.prisma.groupInvitation.create({
+        const invite = await this.prisma.projectInvitation.create({
             data: {
                 email: dto.email,
-                groupId,
+                projectId,
                 invitedById,
                 tokenHash,
                 expiresAt,
@@ -69,7 +91,7 @@ let GroupsService = class GroupsService {
     }
     async acceptInvite(userId, userEmail, dto) {
         const { id, secret } = parseToken(dto.token);
-        const invite = await this.prisma.groupInvitation.findUnique({ where: { id } });
+        const invite = await this.prisma.projectInvitation.findUnique({ where: { id } });
         if (!invite)
             throw new common_1.NotFoundException('Invite not found');
         if (invite.status !== 'PENDING')
@@ -83,21 +105,30 @@ let GroupsService = class GroupsService {
         const ok = await bcrypt.compare(secret, invite.tokenHash);
         if (!ok)
             throw new common_1.ForbiddenException('Invalid token');
-        await this.prisma.userGroup.upsert({
-            where: { userId_groupId: { userId, groupId: invite.groupId } },
-            create: { userId, groupId: invite.groupId },
+        await this.prisma.projectMember.upsert({
+            where: { projectId_userId: { projectId: invite.projectId, userId } },
+            create: { projectId: invite.projectId, userId, role: 'MEMBER' },
             update: {},
         });
-        const updated = await this.prisma.groupInvitation.update({
+        const updated = await this.prisma.projectInvitation.update({
             where: { id: invite.id },
             data: { status: 'ACCEPTED', acceptedById: userId, acceptedAt: new Date() },
         });
         return { invitation: updated };
     }
+    async myProjects(userId) {
+        const memberships = await this.prisma.projectMember.findMany({
+            where: { userId },
+            include: { project: true },
+        });
+        const admin = memberships.filter((m) => m.role === 'ADMIN').map((m) => m.project);
+        const member = memberships.filter((m) => m.role === 'MEMBER').map((m) => m.project);
+        return { admin, member };
+    }
 };
-exports.GroupsService = GroupsService;
-exports.GroupsService = GroupsService = __decorate([
+exports.ProjectsService = ProjectsService;
+exports.ProjectsService = ProjectsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
-], GroupsService);
-//# sourceMappingURL=groups.service.js.map
+], ProjectsService);
+//# sourceMappingURL=projects.service.js.map

@@ -4,7 +4,7 @@ import { CreateGroupDto } from './dto/create-group.dto';
 import { CreateGroupInviteDto } from './dto/create-group-invite.dto';
 import { AcceptGroupInviteDto } from './dto/accept-group-invite.dto';
 import * as bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+import * as crypto from 'crypto';
 
 function makeToken(inviteId: number, secret: string) {
   return `${inviteId}.${secret}`;
@@ -90,4 +90,3 @@ export class GroupsService {
     return { invitation: updated };
   }
 }
-

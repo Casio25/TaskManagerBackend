@@ -43,6 +43,9 @@ let ProjectsController = class ProjectsController {
     async mine(req) {
         return this.projects.myProjects(req.user.id);
     }
+    async remove(req, id) {
+        return this.projects.deleteProject(req.user.id, id);
+    }
 };
 exports.ProjectsController = ProjectsController;
 __decorate([
@@ -77,6 +80,14 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "mine", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "remove", null);
 exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('projects'),

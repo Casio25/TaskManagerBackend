@@ -8,22 +8,22 @@ export declare class GroupsController {
     private mail;
     constructor(groups: GroupsService, mail: MailService);
     create(req: any, dto: CreateGroupDto): Promise<{
-        name: string;
         id: number;
+        name: string;
         createdAt: Date;
         updatedAt: Date;
         adminId: number;
     }>;
     invite(req: any, id: number, dto: CreateGroupInviteDto): Promise<{
         invite: {
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
+            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            groupId: number;
+            email: string;
             invitedById: number;
             tokenHash: string;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             expiresAt: Date | null;
             acceptedById: number | null;
             acceptedAt: Date | null;
@@ -32,14 +32,14 @@ export declare class GroupsController {
     }>;
     accept(req: any, dto: AcceptGroupInviteDto): Promise<{
         invitation: {
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
+            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            groupId: number;
+            email: string;
             invitedById: number;
             tokenHash: string;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             expiresAt: Date | null;
             acceptedById: number | null;
             acceptedAt: Date | null;
@@ -47,15 +47,15 @@ export declare class GroupsController {
     }>;
     myGroups(req: any): Promise<{
         admin: {
-            name: string;
             id: number;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             adminId: number;
         }[];
         member: {
-            name: string;
             id: number;
+            name: string;
             createdAt: Date;
             updatedAt: Date;
             adminId: number;

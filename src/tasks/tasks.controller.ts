@@ -1,27 +1,35 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('tasks')
 export class TasksController {
-    @Get()
-    async getTasks() {
-        return [
-            {
-                id: 1,
-                title: 'Task 1',
-                description: 'Description for Task 1',
-            },
-            {
-                id: 2,
-                title: 'Task 2',
-                description: 'Description for Task 2',
-            },
-        ];
-    }
-    @Post('create')
-    async createTask(@Body() task: { title: string; description: string }) {
-        return {
-            id: Math.floor(Math.random() * 1000),
-            ...task,
-        };
-    }
+  constructor(private readonly tasks: TasksService) {}
+
+  @Post()
+  create(@Req() req: any, @Body() dto: CreateTaskDto) {
+    return this.tasks.createTask(req.user.id, dto);
+  }
+
+  @Patch(':id')
+  update(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateTaskDto,
+  ) {
+    return this.tasks.updateTask(req.user.id, id, dto);
+  }
+
+  @Get('project/:id')
+  byProject(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.tasks.listProjectTasks(req.user.id, id);
+  }
+
+  @Get('my')
+  myTasks(@Req() req: any) {
+    return this.tasks.listUserTasks(req.user.id);
+  }
 }

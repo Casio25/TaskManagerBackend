@@ -6,76 +6,79 @@ export declare class ProjectsService {
     private prisma;
     constructor(prisma: PrismaService);
     createProject(userId: number, dto: CreateProjectDto): Promise<{
-        name: string;
+        description: string | null;
+        deadline: Date | null;
         id: number;
+        name: string;
+        creatorId: number;
+        groupId: number | null;
         createdAt: Date;
         updatedAt: Date;
-        groupId: number | null;
-        description: string | null;
-        creatorId: number;
-        deadline: Date | null;
     }>;
     ensureProjectAdmin(projectId: number, userId: number): Promise<{
-        name: string;
+        description: string | null;
+        deadline: Date | null;
         id: number;
+        name: string;
+        creatorId: number;
+        groupId: number | null;
         createdAt: Date;
         updatedAt: Date;
-        groupId: number | null;
-        description: string | null;
-        creatorId: number;
-        deadline: Date | null;
     }>;
     createInvite(projectId: number, invitedById: number, dto: CreateProjectInviteDto): Promise<{
         invite: {
-            email: string;
+            projectId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
+            email: string;
             invitedById: number;
             tokenHash: string;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             expiresAt: Date | null;
             acceptedById: number | null;
             acceptedAt: Date | null;
-            projectId: number;
         };
         token: string;
     }>;
     acceptInvite(userId: number, userEmail: string, dto: AcceptProjectInviteDto): Promise<{
         invitation: {
-            email: string;
+            projectId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
+            email: string;
             invitedById: number;
             tokenHash: string;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             expiresAt: Date | null;
             acceptedById: number | null;
             acceptedAt: Date | null;
-            projectId: number;
         };
     }>;
     myProjects(userId: number): Promise<{
         admin: {
-            name: string;
+            description: string | null;
+            deadline: Date | null;
             id: number;
+            name: string;
+            creatorId: number;
+            groupId: number | null;
             createdAt: Date;
             updatedAt: Date;
-            groupId: number | null;
-            description: string | null;
-            creatorId: number;
-            deadline: Date | null;
         }[];
         member: {
-            name: string;
+            description: string | null;
+            deadline: Date | null;
             id: number;
+            name: string;
+            creatorId: number;
+            groupId: number | null;
             createdAt: Date;
             updatedAt: Date;
-            groupId: number | null;
-            description: string | null;
-            creatorId: number;
-            deadline: Date | null;
         }[];
+    }>;
+    deleteProject(userId: number, projectId: number): Promise<{
+        success: boolean;
     }>;
 }

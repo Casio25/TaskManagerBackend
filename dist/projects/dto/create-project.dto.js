@@ -16,6 +16,7 @@ class CreateProjectDto {
     name;
     description;
     groupId;
+    deadline;
 }
 exports.CreateProjectDto = CreateProjectDto;
 __decorate([
@@ -35,4 +36,8 @@ __decorate([
     (0, class_validator_1.IsInt)(),
     __metadata("design:type", Number)
 ], CreateProjectDto.prototype, "groupId", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateProjectDto.prototype, "deadline", void 0);
 //# sourceMappingURL=create-project.dto.js.map

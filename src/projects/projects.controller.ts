@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -42,5 +42,9 @@ export class ProjectsController {
   async mine(@Req() req: any) {
     return this.projects.myProjects(req.user.id);
   }
-}
 
+  @Delete(':id')
+  async remove(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.projects.deleteProject(req.user.id, id);
+  }
+}

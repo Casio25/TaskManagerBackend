@@ -14,43 +14,64 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TasksController = void 0;
 const common_1 = require("@nestjs/common");
+const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
+const tasks_service_1 = require("./tasks.service");
+const create_task_dto_1 = require("./dto/create-task.dto");
+const update_task_dto_1 = require("./dto/update-task.dto");
 let TasksController = class TasksController {
-    async getTasks() {
-        return [
-            {
-                id: 1,
-                title: 'Task 1',
-                description: 'Description for Task 1',
-            },
-            {
-                id: 2,
-                title: 'Task 2',
-                description: 'Description for Task 2',
-            },
-        ];
+    tasks;
+    constructor(tasks) {
+        this.tasks = tasks;
     }
-    async createTask(task) {
-        return {
-            id: Math.floor(Math.random() * 1000),
-            ...task,
-        };
+    create(req, dto) {
+        return this.tasks.createTask(req.user.id, dto);
+    }
+    update(req, id, dto) {
+        return this.tasks.updateTask(req.user.id, id, dto);
+    }
+    byProject(req, id) {
+        return this.tasks.listProjectTasks(req.user.id, id);
+    }
+    myTasks(req) {
+        return this.tasks.listUserTasks(req.user.id);
     }
 };
 exports.TasksController = TasksController;
 __decorate([
-    (0, common_1.Get)(),
+    (0, common_1.Post)(),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
-    __metadata("design:returntype", Promise)
-], TasksController.prototype, "getTasks", null);
+    __metadata("design:paramtypes", [Object, create_task_dto_1.CreateTaskDto]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "create", null);
 __decorate([
-    (0, common_1.Post)('create'),
-    __param(0, (0, common_1.Body)()),
+    (0, common_1.Patch)(':id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, update_task_dto_1.UpdateTaskDto]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "update", null);
+__decorate([
+    (0, common_1.Get)('project/:id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "byProject", null);
+__decorate([
+    (0, common_1.Get)('my'),
+    __param(0, (0, common_1.Req)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], TasksController.prototype, "createTask", null);
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "myTasks", null);
 exports.TasksController = TasksController = __decorate([
-    (0, common_1.Controller)('tasks')
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Controller)('tasks'),
+    __metadata("design:paramtypes", [tasks_service_1.TasksService])
 ], TasksController);
 //# sourceMappingURL=tasks.controller.js.map

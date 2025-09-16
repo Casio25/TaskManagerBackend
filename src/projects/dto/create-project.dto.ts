@@ -1,4 +1,4 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { IsDateString, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateProjectDto {
@@ -15,4 +15,7 @@ export class CreateProjectDto {
   @Type(() => Number)
   @IsInt()
   groupId?: number;
+
+  @IsDateString()
+  deadline!: string;
 }

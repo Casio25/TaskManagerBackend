@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
@@ -33,12 +33,18 @@ export class ProjectsService {
       groupId = dto.groupId;
     }
 
+    const deadlineDate = new Date(dto.deadline);
+    if (Number.isNaN(deadlineDate.getTime())) {
+      throw new BadRequestException('Invalid deadline');
+    }
+
     const project = await this.prisma.project.create({
       data: {
         name: dto.name,
         description: dto.description,
         creatorId: userId,
         groupId,
+        deadline: deadlineDate,
         members: {
           create: {
             userId,
@@ -117,9 +123,41 @@ export class ProjectsService {
     const memberships = await this.prisma.projectMember.findMany({
       where: { userId },
       include: { project: true },
+      orderBy: { createdAt: 'desc' },
     });
     const admin = memberships.filter((m) => m.role === 'ADMIN').map((m) => m.project);
     const member = memberships.filter((m) => m.role === 'MEMBER').map((m) => m.project);
     return { admin, member };
+  }
+
+  async deleteProject(userId: number, projectId: number) {
+    await this.ensureProjectAdmin(projectId, userId);
+
+    const tasks = await this.prisma.task.findMany({
+      where: { projectId },
+      select: { id: true },
+    });
+    const taskIds = tasks.map((t) => t.id);
+
+    await this.prisma.$transaction(async (tx) => {
+      if (taskIds.length) {
+        await tx.taskTag.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.submission.deleteMany({ where: { taskId: { in: taskIds } } });
+        await tx.rating.deleteMany({
+          where: {
+            OR: [{ taskId: { in: taskIds } }, { projectId }],
+          },
+        });
+        await tx.task.deleteMany({ where: { id: { in: taskIds } } });
+      } else {
+        await tx.rating.deleteMany({ where: { projectId } });
+      }
+
+      await tx.projectInvitation.deleteMany({ where: { projectId } });
+      await tx.projectMember.deleteMany({ where: { projectId } });
+      await tx.project.delete({ where: { id: projectId } });
+    });
+
+    return { success: true };
   }
 }

@@ -8,14 +8,13 @@ export declare class ProjectsController {
     private mail;
     constructor(projects: ProjectsService, mail: MailService);
     create(req: any, dto: CreateProjectDto): Promise<{
-        description: string | null;
-        deadline: Date | null;
-        id: number;
-        name: string;
-        creatorId: number;
-        groupId: number | null;
-        createdAt: Date;
-        updatedAt: Date;
+        id: any;
+        name: any;
+        description: any;
+        createdAt: any;
+        updatedAt: any;
+        deadline: any;
+        tasks: any;
     }>;
     invite(req: any, id: number, dto: CreateProjectInviteDto): Promise<{
         invite: {
@@ -50,24 +49,22 @@ export declare class ProjectsController {
     }>;
     mine(req: any): Promise<{
         admin: {
-            description: string | null;
-            deadline: Date | null;
-            id: number;
-            name: string;
-            creatorId: number;
-            groupId: number | null;
-            createdAt: Date;
-            updatedAt: Date;
+            id: any;
+            name: any;
+            description: any;
+            createdAt: any;
+            updatedAt: any;
+            deadline: any;
+            tasks: any;
         }[];
         member: {
-            description: string | null;
-            deadline: Date | null;
-            id: number;
-            name: string;
-            creatorId: number;
-            groupId: number | null;
-            createdAt: Date;
-            updatedAt: Date;
+            id: any;
+            name: any;
+            description: any;
+            createdAt: any;
+            updatedAt: any;
+            deadline: any;
+            tasks: any;
         }[];
     }>;
     remove(req: any, id: number): Promise<{

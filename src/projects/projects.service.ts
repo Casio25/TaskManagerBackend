@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+﻿import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
@@ -22,29 +22,36 @@ export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   async createProject(userId: number, dto: CreateProjectDto) {
-    // validate optional group
-    let groupId: number | undefined = undefined;
-    if (dto.groupId !== undefined) {
-      const group = await this.prisma.group.findUnique({ where: { id: dto.groupId } });
-      if (!group) throw new NotFoundException('Group not found');
-      if (group.adminId !== userId) {
-        throw new ForbiddenException('Only group admin can create a project in this group');
-      }
-      groupId = dto.groupId;
-    }
+  const { tasks, deadline, groupId: requestedGroupId, name, description } = dto;
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    throw new BadRequestException('Project name is required');
+  }
+  const trimmedDescription = description?.trim() || undefined;
 
-    const deadlineDate = new Date(dto.deadline);
-    if (Number.isNaN(deadlineDate.getTime())) {
-      throw new BadRequestException('Invalid deadline');
+  let groupId: number | undefined;
+  if (requestedGroupId !== undefined) {
+    const group = await this.prisma.group.findUnique({ where: { id: requestedGroupId } });
+    if (!group) throw new NotFoundException('Group not found');
+    if (group.adminId !== userId) {
+      throw new ForbiddenException('Only group admin can create a project in this group');
     }
+    groupId = requestedGroupId;
+  }
 
-    const project = await this.prisma.project.create({
+  const projectDeadline = new Date(deadline);
+  if (Number.isNaN(projectDeadline.getTime())) {
+    throw new BadRequestException('Invalid deadline');
+  }
+
+  const projectRecord = await this.prisma.$transaction(async (tx) => {
+    const project = await tx.project.create({
       data: {
-        name: dto.name,
-        description: dto.description,
+        name: trimmedName,
+        description: trimmedDescription,
         creatorId: userId,
         groupId,
-        deadline: deadlineDate,
+        deadline: projectDeadline,
         members: {
           create: {
             userId,
@@ -53,8 +60,100 @@ export class ProjectsService {
         },
       },
     });
+
+    for (const taskDto of tasks) {
+      const taskDeadline = new Date(taskDto.deadline);
+      if (Number.isNaN(taskDeadline.getTime())) {
+        throw new BadRequestException(`Invalid task deadline for "${taskDto.title}"`);
+      }
+      if (taskDeadline.getTime() > projectDeadline.getTime()) {
+        throw new BadRequestException(
+          `Task deadline cannot be later than project deadline for "${taskDto.title}"`,
+        );
+      }
+
+      const trimmedTitle = taskDto.title.trim();
+      if (!trimmedTitle) {
+        throw new BadRequestException('Task title is required');
+      }
+      const normalizedDescription = taskDto.description?.trim() || undefined;
+
+      const task = await tx.task.create({
+        data: {
+          title: trimmedTitle,
+          description: normalizedDescription,
+          projectId: project.id,
+          deadline: taskDeadline,
+        },
+      });
+
+      const uniqueTags = Array.from(
+        new Set(taskDto.tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)),
+      );
+
+      for (const tagName of uniqueTags) {
+        const tag = await tx.tag.upsert({
+          where: { name: tagName },
+          update: {},
+          create: { name: tagName },
+        });
+
+        await tx.taskTag.create({
+          data: {
+            taskId: task.id,
+            tagId: tag.id,
+          },
+        });
+      }
+    }
+
     return project;
+  });
+
+  return this.loadProjectWithTasks(projectRecord.id);
+}
+
+  private async loadProjectWithTasks(projectId: number) {
+  const project = await this.prisma.project.findUnique({
+    where: { id: projectId },
+    include: {
+      tasks: {
+        orderBy: { deadline: 'asc' },
+        include: {
+          tags: {
+            include: { tag: true },
+          },
+        },
+      },
+    },
+  });
+
+  if (!project) {
+    throw new NotFoundException('Project not found');
   }
+
+  return this.mapProject(project);
+}
+
+  private mapProject(project: any) {
+  return {
+    id: project.id,
+    name: project.name,
+    description: project.description,
+    createdAt: project.createdAt,
+    updatedAt: project.updatedAt,
+    deadline: project.deadline,
+    tasks: (project.tasks ?? []).map((task: any) => ({
+      id: task.id,
+      title: task.title,
+      description: task.description,
+      status: task.status,
+      deadline: task.deadline,
+      tags: (task.tags ?? []).map((tag: any) => tag.tag.name),
+    })),
+  };
+}
+
 
   async ensureProjectAdmin(projectId: number, userId: number) {
     const project = await this.prisma.project.findUnique({ where: { id: projectId } });
@@ -120,15 +219,37 @@ export class ProjectsService {
   }
 
   async myProjects(userId: number) {
-    const memberships = await this.prisma.projectMember.findMany({
-      where: { userId },
-      include: { project: true },
-      orderBy: { createdAt: 'desc' },
-    });
-    const admin = memberships.filter((m) => m.role === 'ADMIN').map((m) => m.project);
-    const member = memberships.filter((m) => m.role === 'MEMBER').map((m) => m.project);
-    return { admin, member };
-  }
+  const memberships = await this.prisma.projectMember.findMany({
+    where: { userId },
+    include: {
+      project: {
+        include: {
+          tasks: {
+            orderBy: { deadline: 'asc' },
+            include: {
+              tags: {
+                include: { tag: true },
+              },
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+
+  const admin = memberships
+    .filter((membership) => membership.role === 'ADMIN')
+    .map((membership) => this.mapProject(membership.project));
+
+  const member = memberships
+    .filter((membership) => membership.role === 'MEMBER')
+    .map((membership) => this.mapProject(membership.project));
+
+  return { admin, member };
+}
+
+
 
   async deleteProject(userId: number, projectId: number) {
     await this.ensureProjectAdmin(projectId, userId);
@@ -161,3 +282,8 @@ export class ProjectsService {
     return { success: true };
   }
 }
+
+
+
+
+

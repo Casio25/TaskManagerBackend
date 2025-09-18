@@ -9,44 +9,35 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateProjectDto = void 0;
-const class_transformer_1 = require("class-transformer");
+exports.ProjectTaskDto = void 0;
 const class_validator_1 = require("class-validator");
-const project_task_dto_1 = require("./project-task.dto");
-class CreateProjectDto {
-    name;
+class ProjectTaskDto {
+    title;
     description;
-    groupId;
+    tags;
     deadline;
-    tasks;
 }
-exports.CreateProjectDto = CreateProjectDto;
+exports.ProjectTaskDto = ProjectTaskDto;
 __decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.MaxLength)(255),
     __metadata("design:type", String)
-], CreateProjectDto.prototype, "name", void 0);
+], ProjectTaskDto.prototype, "title", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(2000),
     __metadata("design:type", String)
-], CreateProjectDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_transformer_1.Type)(() => Number),
-    (0, class_validator_1.IsInt)(),
-    __metadata("design:type", Number)
-], CreateProjectDto.prototype, "groupId", void 0);
-__decorate([
-    (0, class_validator_1.IsDateString)(),
-    __metadata("design:type", String)
-], CreateProjectDto.prototype, "deadline", void 0);
+], ProjectTaskDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ArrayMinSize)(1),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => project_task_dto_1.ProjectTaskDto),
+    (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", Array)
-], CreateProjectDto.prototype, "tasks", void 0);
-//# sourceMappingURL=create-project.dto.js.map
+], ProjectTaskDto.prototype, "tags", void 0);
+__decorate([
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], ProjectTaskDto.prototype, "deadline", void 0);
+//# sourceMappingURL=project-task.dto.js.map

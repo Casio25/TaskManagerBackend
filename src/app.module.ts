@@ -1,3 +1,4 @@
+﻿import { ColleaguesModule } from './colleagues/colleagues.module';
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
@@ -9,8 +10,10 @@ import { ProjectsModule } from './projects/projects.module';
 import { CalendarModule } from './calendar/calendar.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, GroupsModule, ProjectsModule, TasksModule, CalendarModule],
+  imports: [PrismaModule, AuthModule, GroupsModule, ProjectsModule, TasksModule, CalendarModule, ColleaguesModule],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
+
+

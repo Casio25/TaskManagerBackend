@@ -116,6 +116,9 @@ let ProjectsService = class ProjectsService {
                         tags: {
                             include: { tag: true },
                         },
+                        assignedTo: {
+                            select: { id: true, name: true, email: true },
+                        },
                     },
                 },
             },
@@ -140,6 +143,9 @@ let ProjectsService = class ProjectsService {
                 status: task.status,
                 deadline: task.deadline,
                 tags: (task.tags ?? []).map((tag) => tag.tag.name),
+                assignedTo: task.assignedTo
+                    ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+                    : null,
             })),
         };
     }

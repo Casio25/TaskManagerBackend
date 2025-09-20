@@ -18,12 +18,12 @@ export declare class ProjectsController {
     }>;
     invite(req: any, id: number, dto: CreateProjectInviteDto): Promise<{
         invite: {
+            email: string;
             projectId: number;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;
@@ -34,12 +34,12 @@ export declare class ProjectsController {
     }>;
     accept(req: any, dto: AcceptProjectInviteDto): Promise<{
         invitation: {
+            email: string;
             projectId: number;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;

@@ -17,23 +17,23 @@ export declare class ProjectsService {
     private loadProjectWithTasks;
     private mapProject;
     ensureProjectAdmin(projectId: number, userId: number): Promise<{
-        description: string | null;
-        deadline: Date | null;
-        id: number;
         name: string;
-        creatorId: number;
-        groupId: number | null;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
+        description: string | null;
+        creatorId: number;
+        groupId: number | null;
+        deadline: Date | null;
     }>;
     createInvite(projectId: number, invitedById: number, dto: CreateProjectInviteDto): Promise<{
         invite: {
+            email: string;
             projectId: number;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;
@@ -44,12 +44,12 @@ export declare class ProjectsService {
     }>;
     acceptInvite(userId: number, userEmail: string, dto: AcceptProjectInviteDto): Promise<{
         invitation: {
+            email: string;
             projectId: number;
-            status: import(".prisma/client").$Enums.InvitationStatus;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;

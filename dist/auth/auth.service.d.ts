@@ -11,23 +11,23 @@ export declare class AuthService {
     private signToken;
     register(dto: RegisterDto): Promise<{
         user: {
-            id: number;
+            email: string;
             name: string;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
             role: import(".prisma/client").$Enums.Role;
-            email: string;
         };
         access_token: string;
     }>;
     login(dto: LoginDto): Promise<{
         user: {
-            id: number;
+            email: string;
             name: string;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
             role: import(".prisma/client").$Enums.Role;
-            email: string;
         };
         access_token: string;
     }>;

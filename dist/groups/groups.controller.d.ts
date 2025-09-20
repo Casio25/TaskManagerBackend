@@ -8,20 +8,20 @@ export declare class GroupsController {
     private mail;
     constructor(groups: GroupsService, mail: MailService);
     create(req: any, dto: CreateGroupDto): Promise<{
-        id: number;
         name: string;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         adminId: number;
     }>;
     invite(req: any, id: number, dto: CreateGroupInviteDto): Promise<{
         invite: {
-            status: import(".prisma/client").$Enums.InvitationStatus;
+            email: string;
             id: number;
-            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            groupId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;
@@ -32,12 +32,12 @@ export declare class GroupsController {
     }>;
     accept(req: any, dto: AcceptGroupInviteDto): Promise<{
         invitation: {
-            status: import(".prisma/client").$Enums.InvitationStatus;
+            email: string;
             id: number;
-            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            groupId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;
@@ -47,15 +47,15 @@ export declare class GroupsController {
     }>;
     myGroups(req: any): Promise<{
         admin: {
-            id: number;
             name: string;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
             adminId: number;
         }[];
         member: {
-            id: number;
             name: string;
+            id: number;
             createdAt: Date;
             updatedAt: Date;
             adminId: number;

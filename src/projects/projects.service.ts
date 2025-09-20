@@ -123,6 +123,9 @@ export class ProjectsService {
           tags: {
             include: { tag: true },
           },
+          assignedTo: {
+            select: { id: true, name: true, email: true },
+          },
         },
       },
     },
@@ -150,6 +153,9 @@ export class ProjectsService {
       status: task.status,
       deadline: task.deadline,
       tags: (task.tags ?? []).map((tag: any) => tag.tag.name),
+      assignedTo: task.assignedTo
+        ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+        : null,
     })),
   };
 }
@@ -282,6 +288,8 @@ export class ProjectsService {
     return { success: true };
   }
 }
+
+
 
 
 

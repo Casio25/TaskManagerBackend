@@ -6,27 +6,27 @@ export declare class GroupsService {
     private prisma;
     constructor(prisma: PrismaService);
     createGroup(userId: number, dto: CreateGroupDto): Promise<{
-        id: number;
         name: string;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         adminId: number;
     }>;
     ensureGroupAdmin(groupId: number, userId: number): Promise<{
-        id: number;
         name: string;
+        id: number;
         createdAt: Date;
         updatedAt: Date;
         adminId: number;
     }>;
     createInvite(groupId: number, invitedById: number, dto: CreateGroupInviteDto): Promise<{
         invite: {
-            status: import(".prisma/client").$Enums.InvitationStatus;
+            email: string;
             id: number;
-            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            groupId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;
@@ -37,12 +37,12 @@ export declare class GroupsService {
     }>;
     acceptInvite(userId: number, userEmail: string, dto: AcceptGroupInviteDto): Promise<{
         invitation: {
-            status: import(".prisma/client").$Enums.InvitationStatus;
+            email: string;
             id: number;
-            groupId: number;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
+            groupId: number;
+            status: import(".prisma/client").$Enums.InvitationStatus;
             invitedById: number;
             tokenHash: string;
             expiresAt: Date | null;

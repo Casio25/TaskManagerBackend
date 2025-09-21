@@ -11,6 +11,7 @@ export declare class ProjectsController {
         id: any;
         name: any;
         description: any;
+        color: any;
         createdAt: any;
         updatedAt: any;
         deadline: any;
@@ -52,6 +53,7 @@ export declare class ProjectsController {
             id: any;
             name: any;
             description: any;
+            color: any;
             createdAt: any;
             updatedAt: any;
             deadline: any;
@@ -61,6 +63,7 @@ export declare class ProjectsController {
             id: any;
             name: any;
             description: any;
+            color: any;
             createdAt: any;
             updatedAt: any;
             deadline: any;

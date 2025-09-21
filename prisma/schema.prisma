@@ -95,6 +95,7 @@ model Project {
   id            Int                   @id @default(autoincrement())
   name          String
   description   String?
+  color         String              @default("#2563eb")
   creatorId     Int
   creator       User                  @relation("ProjectsCreated", fields: [creatorId], references: [id])
   groupId       Int?

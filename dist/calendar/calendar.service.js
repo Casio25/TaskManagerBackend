@@ -98,6 +98,7 @@ let CalendarService = class CalendarService {
                 select: {
                     id: true,
                     name: true,
+                    color: true,
                     members: includeProjectMembers
                         ? {
                             select: {

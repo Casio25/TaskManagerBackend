@@ -15,6 +15,7 @@ export declare class CalendarService {
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
+            color: string;
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;
@@ -128,6 +129,7 @@ export declare class CalendarService {
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
+            color: string;
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;

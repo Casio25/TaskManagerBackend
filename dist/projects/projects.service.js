@@ -30,12 +30,13 @@ let ProjectsService = class ProjectsService {
         this.prisma = prisma;
     }
     async createProject(userId, dto) {
-        const { tasks, deadline, groupId: requestedGroupId, name, description } = dto;
+        const { tasks, deadline, groupId: requestedGroupId, name, description, color: colorInput } = dto;
         const trimmedName = name.trim();
         if (!trimmedName) {
             throw new common_1.BadRequestException('Project name is required');
         }
         const trimmedDescription = description?.trim() || undefined;
+        const color = (colorInput?.trim() || '#2563EB').toUpperCase();
         let groupId;
         if (requestedGroupId !== undefined) {
             const group = await this.prisma.group.findUnique({ where: { id: requestedGroupId } });
@@ -58,6 +59,7 @@ let ProjectsService = class ProjectsService {
                     creatorId: userId,
                     groupId,
                     deadline: projectDeadline,
+                    color,
                     members: {
                         create: {
                             userId,
@@ -133,6 +135,7 @@ let ProjectsService = class ProjectsService {
             id: project.id,
             name: project.name,
             description: project.description,
+            color: project.color,
             createdAt: project.createdAt,
             updatedAt: project.updatedAt,
             deadline: project.deadline,
@@ -220,6 +223,9 @@ let ProjectsService = class ProjectsService {
                             include: {
                                 tags: {
                                     include: { tag: true },
+                                },
+                                assignedTo: {
+                                    select: { id: true, name: true, email: true },
                                 },
                             },
                         },

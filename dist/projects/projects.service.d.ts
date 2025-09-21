@@ -9,6 +9,7 @@ export declare class ProjectsService {
         id: any;
         name: any;
         description: any;
+        color: any;
         createdAt: any;
         updatedAt: any;
         deadline: any;
@@ -22,6 +23,7 @@ export declare class ProjectsService {
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
+        color: string;
         creatorId: number;
         groupId: number | null;
         deadline: Date | null;
@@ -62,6 +64,7 @@ export declare class ProjectsService {
             id: any;
             name: any;
             description: any;
+            color: any;
             createdAt: any;
             updatedAt: any;
             deadline: any;
@@ -71,6 +74,7 @@ export declare class ProjectsService {
             id: any;
             name: any;
             description: any;
+            color: any;
             createdAt: any;
             updatedAt: any;
             deadline: any;

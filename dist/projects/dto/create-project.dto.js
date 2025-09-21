@@ -16,6 +16,7 @@ const project_task_dto_1 = require("./project-task.dto");
 class CreateProjectDto {
     name;
     description;
+    color;
     groupId;
     deadline;
     tasks;
@@ -32,6 +33,12 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateProjectDto.prototype, "description", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Matches)(/^#[0-9A-Fa-f]{6}$/),
+    __metadata("design:type", String)
+], CreateProjectDto.prototype, "color", void 0);
 __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_transformer_1.Type)(() => Number),

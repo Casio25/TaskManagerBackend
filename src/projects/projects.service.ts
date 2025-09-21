@@ -22,12 +22,13 @@ export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   async createProject(userId: number, dto: CreateProjectDto) {
-  const { tasks, deadline, groupId: requestedGroupId, name, description } = dto;
+  const { tasks, deadline, groupId: requestedGroupId, name, description, color: colorInput } = dto;
   const trimmedName = name.trim();
   if (!trimmedName) {
     throw new BadRequestException('Project name is required');
   }
   const trimmedDescription = description?.trim() || undefined;
+  const color = (colorInput?.trim() || '#2563EB').toUpperCase();
 
   let groupId: number | undefined;
   if (requestedGroupId !== undefined) {
@@ -52,6 +53,7 @@ export class ProjectsService {
         creatorId: userId,
         groupId,
         deadline: projectDeadline,
+        color,
         members: {
           create: {
             userId,
@@ -143,6 +145,7 @@ export class ProjectsService {
     id: project.id,
     name: project.name,
     description: project.description,
+    color: project.color,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
     deadline: project.deadline,
@@ -235,6 +238,9 @@ export class ProjectsService {
             include: {
               tags: {
                 include: { tag: true },
+              },
+              assignedTo: {
+                select: { id: true, name: true, email: true },
               },
             },
           },

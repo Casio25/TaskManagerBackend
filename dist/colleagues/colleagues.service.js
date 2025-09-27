@@ -172,6 +172,48 @@ let ColleaguesService = class ColleaguesService {
             colleague: await this.buildColleagueResponse(ownerId, refreshedColleague),
         };
     }
+    async removeFromList(ownerId, listId, colleagueId) {
+        const list = await this.prisma.colleagueList.findFirst({
+            where: { id: listId, ownerId },
+        });
+        if (!list)
+            throw new common_1.NotFoundException('List not found');
+        const colleague = await this.ensureColleague(ownerId, colleagueId);
+        const membership = await this.prisma.colleagueListMember.findUnique({
+            where: { listId_colleagueId: { listId, colleagueId } },
+        });
+        if (!membership) {
+            throw new common_1.NotFoundException('Colleague is not in this list');
+        }
+        await this.prisma.colleagueListMember.delete({
+            where: { listId_colleagueId: { listId, colleagueId } },
+        });
+        const updatedList = await this.prisma.colleagueList.findUnique({
+            where: { id: listId },
+            include: {
+                members: {
+                    include: {
+                        colleague: {
+                            include: {
+                                contact: {
+                                    select: { id: true, email: true, name: true, role: true },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: { createdAt: 'asc' },
+                },
+            },
+        });
+        const refreshedColleague = await this.prisma.colleague.findUnique({
+            where: { id: colleague.id },
+            include: this.colleagueInclude,
+        });
+        return {
+            list: this.mapList(updatedList),
+            colleague: await this.buildColleagueResponse(ownerId, refreshedColleague),
+        };
+    }
     async assignProject(ownerId, colleagueId, dto) {
         let colleague = await this.ensureColleague(ownerId, colleagueId);
         if (!colleague.contactId) {

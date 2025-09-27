@@ -96,6 +96,37 @@ export declare class ColleaguesController {
             lists: any;
         };
     }>;
+    removeFromList(req: any, id: number, colleagueId: number): Promise<{
+        list: {
+            id: any;
+            name: any;
+            createdAt: any;
+            updatedAt: any;
+            members: any;
+        };
+        colleague: {
+            assignedProjects: {
+                name: string;
+                id: number;
+            }[];
+            assignedTasks: {
+                projectId: number;
+                id: number;
+                title: string;
+            }[];
+            id: any;
+            email: any;
+            createdAt: any;
+            updatedAt: any;
+            contact: {
+                id: any;
+                email: any;
+                name: any;
+                role: any;
+            } | null;
+            lists: any;
+        };
+    }>;
     assignProject(req: any, id: number, dto: AssignProjectDto): Promise<{
         assignedProjects: {
             name: string;

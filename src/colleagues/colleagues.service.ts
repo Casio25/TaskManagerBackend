@@ -188,6 +188,71 @@ export class ColleaguesService {
     };
   }
 
+  async deleteList(ownerId: number, listId: number) {
+    const list = await this.prisma.colleagueList.findFirst({
+      where: { id: listId, ownerId },
+    });
+    if ( !list) throw new NotFoundException( 'List not found');
+
+    await this.prisma. $transaction(async (tx) => { 
+      await tx.colleagueListMember.deleteMany({ where: { listId } });
+      await tx.colleagueList.delete({ where: { id: listId } });
+    });
+
+    await this.ensureDefaultLists(ownerId);
+
+    return { deletedId: listId };
+  }
+
+
+  async removeFromList(ownerId: number, listId: number, colleagueId: number) {
+    const list = await this.prisma.colleagueList.findFirst({
+      where: { id: listId, ownerId },
+    });
+    if (!list) throw new NotFoundException('List not found');
+
+    const colleague = await this.ensureColleague(ownerId, colleagueId);
+
+    const membership = await this.prisma.colleagueListMember.findUnique({
+      where: { listId_colleagueId: { listId, colleagueId } },
+    });
+    if (!membership) {
+      throw new NotFoundException('Colleague is not in this list');
+    }
+
+    await this.prisma.colleagueListMember.delete({
+      where: { listId_colleagueId: { listId, colleagueId } },
+    });
+
+    const updatedList = await this.prisma.colleagueList.findUnique({
+      where: { id: listId },
+      include: {
+        members: {
+          include: {
+            colleague: {
+              include: {
+                contact: {
+                  select: { id: true, email: true, name: true, role: true },
+                },
+              },
+            },
+          },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+
+    const refreshedColleague = await this.prisma.colleague.findUnique({
+      where: { id: colleague.id },
+      include: this.colleagueInclude,
+    });
+
+    return {
+      list: this.mapList(updatedList!),
+      colleague: await this.buildColleagueResponse(ownerId, refreshedColleague!),
+    };
+  }
+
   async assignProject(ownerId: number, colleagueId: number, dto: AssignProjectDto) {
     let colleague = await this.ensureColleague(ownerId, colleagueId);
     if (!colleague.contactId) {

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ColleaguesService } from './colleagues.service';
 import { CreateColleagueDto } from './dto/create-colleague.dto';
@@ -39,6 +39,23 @@ export class ColleaguesController {
     @Body() dto: AddToListDto,
   ) {
     return this.colleagues.addToList(req.user.id, id, dto);
+  }
+
+  @Delete('lists/:id')
+  deleteList(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+  ) {
+    return this.colleagues.deleteList(req.user.id, id);
+  }
+
+  @Delete('lists/:id/members/:colleagueId')
+  removeFromList(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Param('colleagueId', ParseIntPipe) colleagueId: number,
+  ) {
+    return this.colleagues.removeFromList(req.user.id, id, colleagueId);
   }
 
   @Post(':id/assign-project')

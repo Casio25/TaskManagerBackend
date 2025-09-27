@@ -97,6 +97,37 @@ export declare class ColleaguesService {
             lists: any;
         };
     }>;
+    removeFromList(ownerId: number, listId: number, colleagueId: number): Promise<{
+        list: {
+            id: any;
+            name: any;
+            createdAt: any;
+            updatedAt: any;
+            members: any;
+        };
+        colleague: {
+            assignedProjects: {
+                name: string;
+                id: number;
+            }[];
+            assignedTasks: {
+                projectId: number;
+                id: number;
+                title: string;
+            }[];
+            id: any;
+            email: any;
+            createdAt: any;
+            updatedAt: any;
+            contact: {
+                id: any;
+                email: any;
+                name: any;
+                role: any;
+            } | null;
+            lists: any;
+        };
+    }>;
     assignProject(ownerId: number, colleagueId: number, dto: AssignProjectDto): Promise<{
         assignedProjects: {
             name: string;

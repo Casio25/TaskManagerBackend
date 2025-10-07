@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
+import { Prisma, ProjectStatus } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 
@@ -116,52 +117,65 @@ export class ProjectsService {
 }
 
   private async loadProjectWithTasks(projectId: number) {
-  const project = await this.prisma.project.findUnique({
-    where: { id: projectId },
-    include: {
-      tasks: {
-        orderBy: { deadline: 'asc' },
-        include: {
-          tags: {
-            include: { tag: true },
-          },
-          assignedTo: {
-            select: { id: true, name: true, email: true },
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: {
+        completedBy: { select: { id: true, name: true, email: true } },
+        tasks: {
+          orderBy: { deadline: 'asc' },
+          include: {
+            tags: { include: { tag: true } },
+            assignedTo: { select: { id: true, name: true, email: true } },
+            submittedBy: { select: { id: true, name: true, email: true } },
+            completedBy: { select: { id: true, name: true, email: true } },
           },
         },
       },
-    },
-  });
+    });
 
-  if (!project) {
-    throw new NotFoundException('Project not found');
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    return this.mapProject(project);
   }
 
-  return this.mapProject(project);
-}
-
   private mapProject(project: any) {
-  return {
-    id: project.id,
-    name: project.name,
-    description: project.description,
-    color: project.color,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
-    deadline: project.deadline,
-    tasks: (project.tasks ?? []).map((task: any) => ({
-      id: task.id,
-      title: task.title,
-      description: task.description,
-      status: task.status,
-      deadline: task.deadline,
-      tags: (task.tags ?? []).map((tag: any) => tag.tag.name),
-      assignedTo: task.assignedTo
-        ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+    return {
+      id: project.id,
+      name: project.name,
+      description: project.description,
+      color: project.color,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      deadline: project.deadline,
+      status: project.status,
+      completedAt: project.completedAt,
+      completedBy: project.completedBy
+        ? { id: project.completedBy.id, name: project.completedBy.name, email: project.completedBy.email }
         : null,
-    })),
-  };
-}
+      tasks: (project.tasks ?? []).map((task: any) => ({
+        id: task.id,
+        title: task.title,
+        description: task.description,
+        status: task.status,
+        deadline: task.deadline,
+        submittedAt: task.submittedAt,
+        completedAt: task.completedAt,
+        submittedBy: task.submittedBy
+          ? { id: task.submittedBy.id, name: task.submittedBy.name, email: task.submittedBy.email }
+          : null,
+        completedBy: task.completedBy
+          ? { id: task.completedBy.id, name: task.completedBy.name, email: task.completedBy.email }
+          : null,
+        tags: (task.tags ?? []).map((tag: any) => tag.tag.name),
+        assignedTo: task.assignedTo
+          ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+          : null,
+      })),
+    };
+  }
+
 
 
   async ensureProjectAdmin(projectId: number, userId: number) {
@@ -233,15 +247,14 @@ export class ProjectsService {
     include: {
       project: {
         include: {
+          completedBy: { select: { id: true, name: true, email: true } },
           tasks: {
             orderBy: { deadline: 'asc' },
             include: {
-              tags: {
-                include: { tag: true },
-              },
-              assignedTo: {
-                select: { id: true, name: true, email: true },
-              },
+              tags: { include: { tag: true } },
+              assignedTo: { select: { id: true, name: true, email: true } },
+              submittedBy: { select: { id: true, name: true, email: true } },
+              completedBy: { select: { id: true, name: true, email: true } },
             },
           },
         },
@@ -261,6 +274,28 @@ export class ProjectsService {
   return { admin, member };
 }
 
+
+
+  async updateProjectStatus(userId: number, projectId: number, status: ProjectStatus) {
+    const project = await this.ensureProjectAdmin(projectId, userId);
+    const data: Prisma.ProjectUpdateInput = { status };
+    if (status === ProjectStatus.COMPLETED) {
+      const now = new Date();
+      data.completedAt = project.completedAt ?? now;
+      data.completedBy = { connect: { id: userId } };
+    } else {
+      data.completedAt = null;
+      if (project.completedById) {
+        data.completedBy = { disconnect: true };
+      }
+    }
+
+    await this.prisma.project.update({
+      where: { id: projectId },
+      data,
+    });
+    return this.loadProjectWithTasks(projectId);
+  }
 
 
   async deleteProject(userId: number, projectId: number) {

@@ -1,8 +1,10 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { Prisma, ProjectRole, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { Prisma, ProjectRole } from '@prisma/client';
+import { RateTaskDto } from './dto/rate-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -21,8 +23,10 @@ export class TasksService {
     });
     if (!project) throw new NotFoundException('Project not found');
     const isCreator = project.creatorId === userId;
-    const membership = project.members.find((m) => m.userId === userId);
-    if (!isCreator && !membership) throw new ForbiddenException('Access denied to this project');
+    const membership = project.members.find((member) => member.userId === userId);
+    if (!isCreator && !membership) {
+      throw new ForbiddenException('Access denied to this project');
+    }
     return { project, membership, isCreator };
   }
 
@@ -74,18 +78,32 @@ export class TasksService {
       if (!themeExists) throw new NotFoundException('Theme not found');
     }
 
+    const status = dto.status ?? TaskStatus.NEW;
+    const now = new Date();
+
+    const data: Prisma.TaskCreateInput = {
+      title: dto.title,
+      description: dto.description,
+      status,
+      deadline: dto.deadline ? new Date(dto.deadline) : null,
+      project: { connect: { id: dto.projectId } },
+      assignedTo: assignedToConnect,
+      assignedGroup: assignedGroupConnect,
+      parentTask: parentTaskConnect,
+      theme: dto.themeId ? { connect: { id: dto.themeId } } : undefined,
+    };
+
+    if (status === TaskStatus.SUBMITTED || status === TaskStatus.COMPLETED) {
+      data.submittedAt = now;
+      data.submittedBy = { connect: { id: userId } };
+    }
+    if (status === TaskStatus.COMPLETED) {
+      data.completedAt = now;
+      data.completedBy = { connect: { id: userId } };
+    }
+
     const task = await this.prisma.task.create({
-      data: {
-        title: dto.title,
-        description: dto.description,
-        project: { connect: { id: dto.projectId } },
-        assignedTo: assignedToConnect,
-        assignedGroup: assignedGroupConnect,
-        parentTask: parentTaskConnect,
-        theme: dto.themeId ? { connect: { id: dto.themeId } } : undefined,
-        status: dto.status,
-        deadline: dto.deadline ? new Date(dto.deadline) : undefined,
-      },
+      data,
       include: this.taskInclude(),
     });
 
@@ -98,6 +116,7 @@ export class TasksService {
       include: { project: { select: { id: true, creatorId: true, groupId: true } } },
     });
     if (!task) throw new NotFoundException('Task not found');
+
     const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
     const isAdmin = this.isAdmin(membership, isCreator);
     if (!isAdmin && task.assignedToId !== userId) {
@@ -107,9 +126,47 @@ export class TasksService {
     const data: Prisma.TaskUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title;
     if (dto.description !== undefined) data.description = dto.description;
+
     if (dto.status !== undefined) {
-      data.status = dto.status;
+      const now = new Date();
+      if (dto.status === TaskStatus.SUBMITTED) {
+        if (!isAdmin && task.assignedToId !== userId) {
+          throw new ForbiddenException('Only the assignee can submit this task');
+        }
+        data.status = TaskStatus.SUBMITTED;
+        data.submittedAt = now;
+        data.submittedBy = { connect: { id: userId } };
+        data.completedAt = null;
+        if (task.completedById) {
+          data.completedBy = { disconnect: true };
+        }
+      } else if (dto.status === TaskStatus.COMPLETED) {
+        if (!isAdmin) {
+          throw new ForbiddenException('Only project admins can complete tasks');
+        }
+        data.status = TaskStatus.COMPLETED;
+        data.completedAt = now;
+        data.completedBy = { connect: { id: userId } };
+        if (!task.submittedById) {
+          data.submittedAt = now;
+          data.submittedBy = { connect: { id: userId } };
+        }
+      } else {
+        if (!isAdmin) {
+          throw new ForbiddenException('Only project admins can change this status');
+        }
+        data.status = dto.status;
+        data.completedAt = null;
+        if (task.completedById) {
+          data.completedBy = { disconnect: true };
+        }
+        data.submittedAt = null;
+        if (task.submittedById) {
+          data.submittedBy = { disconnect: true };
+        }
+      }
     }
+
     if (dto.deadline !== undefined) {
       data.deadline = dto.deadline ? new Date(dto.deadline) : null;
     }
@@ -192,12 +249,251 @@ export class TasksService {
     });
   }
 
+  async completeTask(userId: number, taskId: number) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        id: true,
+        projectId: true,
+        assignedToId: true,
+        status: true,
+        submittedAt: true,
+        submittedById: true,
+        completedAt: true,
+        completedById: true,
+      },
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    const isAdmin = this.isAdmin(membership, isCreator);
+    const now = new Date();
+
+    if (!isAdmin) {
+      if (task.assignedToId !== userId) {
+        throw new ForbiddenException('Only the assignee can submit this task');
+      }
+      if (task.status === TaskStatus.SUBMITTED && task.submittedById === userId) {
+        return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+      }
+      return this.prisma.task.update({
+        where: { id: taskId },
+        data: {
+          status: TaskStatus.SUBMITTED,
+          submittedAt: now,
+          submittedBy: { connect: { id: userId } },
+          completedAt: null,
+          ...(task.completedById ? { completedBy: { disconnect: true } } : {}),
+        },
+        include: this.taskInclude(),
+      });
+    }
+
+    if (task.status === TaskStatus.COMPLETED && task.completedById) {
+      return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+    }
+
+    const data: Prisma.TaskUpdateInput = {
+      status: TaskStatus.COMPLETED,
+      completedAt: now,
+      completedBy: { connect: { id: userId } },
+    };
+    if (!task.submittedById) {
+      data.submittedAt = now;
+      data.submittedBy = { connect: { id: userId } };
+    }
+
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data,
+      include: this.taskInclude(),
+    });
+  }
+
+  async reopenTask(userId: number, taskId: number) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      select: {
+        id: true,
+        projectId: true,
+        status: true,
+        submittedById: true,
+        completedById: true,
+      },
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    if (!this.isAdmin(membership, isCreator)) {
+      throw new ForbiddenException('Only project admins can reopen tasks');
+    }
+
+    if (task.status !== TaskStatus.SUBMITTED && task.status !== TaskStatus.COMPLETED) {
+      return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+    }
+
+    return this.prisma.task.update({
+      where: { id: taskId },
+      data: {
+        status: TaskStatus.IN_PROGRESS,
+        submittedAt: null,
+        completedAt: null,
+        ...(task.submittedById ? { submittedBy: { disconnect: true } } : {}),
+        ...(task.completedById ? { completedBy: { disconnect: true } } : {}),
+      },
+      include: this.taskInclude(),
+    });
+  }
+
+  async rateTask(userId: number, taskId: number, dto: RateTaskDto) {
+    const task = await this.prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        project: { select: { id: true, creatorId: true } },
+        tags: { include: { tag: true } },
+        assignedTo: { select: { id: true, name: true, email: true } },
+      },
+    });
+    if (!task) throw new NotFoundException('Task not found');
+
+    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    if (!this.isAdmin(membership, isCreator)) {
+      throw new ForbiddenException('Only project admins can rate tasks');
+    }
+    if (task.status !== TaskStatus.COMPLETED) {
+      throw new BadRequestException('Task must be completed before rating');
+    }
+    if (!task.assignedTo?.id) {
+      throw new BadRequestException('Task does not have an assignee to rate');
+    }
+
+    const assigneeId = task.assignedTo.id;
+    const tagLinks = task.tags ?? [];
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      const existing = await tx.rating.findFirst({
+        where: { taskId, userId: assigneeId },
+      });
+      const ratingData = {
+        punctuality: dto.punctuality,
+        teamwork: dto.teamwork,
+        quality: dto.quality,
+        comments: dto.comments ?? null,
+      };
+      let rating;
+      if (existing) {
+        rating = await tx.rating.update({
+          where: { id: existing.id },
+          data: ratingData,
+        });
+      } else {
+        rating = await tx.rating.create({
+          data: {
+            ...ratingData,
+            user: { connect: { id: assigneeId } },
+            task: { connect: { id: taskId } },
+            project: { connect: { id: task.project.id } },
+          },
+        });
+      }
+
+      const summaries: Array<{ tagId: number; data: any }> = [];
+      for (const link of tagLinks) {
+        const summary = await this.recalculateTagPerformance(
+          tx,
+          assigneeId,
+          link.tagId,
+        );
+        summaries.push({ tagId: link.tagId, data: summary });
+      }
+
+      return { rating, summaries };
+    });
+
+    const performances = tagLinks.map((link) => {
+      const summary =
+        result.summaries.find((item) => item.tagId === link.tagId)?.data ||
+        null;
+      return { tagId: link.tagId, tagName: link.tag.name, summary };
+    });
+
+    return { rating: result.rating, performances };
+  }
+
+  private async recalculateTagPerformance(
+    tx: Prisma.TransactionClient,
+    userId: number,
+    tagId: number,
+  ) {
+    const aggregates = await tx.rating.aggregate({
+      _avg: { punctuality: true, teamwork: true, quality: true },
+      _count: { _all: true },
+      where: {
+        userId,
+        task: {
+          tags: {
+            some: { tagId },
+          },
+        },
+      },
+    });
+
+    const count = aggregates._count?._all ?? 0;
+    if (!count) {
+      await tx.userTagPerformance
+        .delete({ where: { userId_tagId: { userId, tagId } } })
+        .catch(() => undefined);
+      return null;
+    }
+
+    const last = await tx.rating.findFirst({
+      where: {
+        userId,
+        task: {
+          tags: {
+            some: { tagId },
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+      select: { punctuality: true, teamwork: true, quality: true, updatedAt: true, taskId: true },
+    });
+
+    const summary = {
+      averagePunctuality: aggregates._avg.punctuality ?? 0,
+      averageTeamwork: aggregates._avg.teamwork ?? 0,
+      averageQuality: aggregates._avg.quality ?? 0,
+      ratingsCount: count,
+      lastPunctuality: last?.punctuality ?? null,
+      lastTeamwork: last?.teamwork ?? null,
+      lastQuality: last?.quality ?? null,
+      lastTaskId: last?.taskId ?? null,
+      lastRatedAt: last?.updatedAt ?? null,
+    };
+
+    await tx.userTagPerformance.upsert({
+      where: { userId_tagId: { userId, tagId } },
+      create: {
+        userId,
+        tagId,
+        ...summary,
+      },
+      update: summary,
+    });
+
+    return summary;
+  }
+
   private taskInclude(): Prisma.TaskInclude {
     return {
       assignedTo: { select: { id: true, name: true, email: true } },
       assignedGroup: { select: { id: true, name: true } },
+      submittedBy: { select: { id: true, name: true, email: true } },
+      completedBy: { select: { id: true, name: true, email: true } },
       project: { select: { id: true, name: true } },
       parentTask: { select: { id: true, title: true } },
+      tags: { include: { tag: true } },
     };
   }
 }
+

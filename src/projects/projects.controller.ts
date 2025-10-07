@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
+import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { MailService } from '../mail/mail.service';
 
 @UseGuards(JwtAuthGuard)
@@ -41,6 +42,15 @@ export class ProjectsController {
   @Get('mine')
   async mine(@Req() req: any) {
     return this.projects.myProjects(req.user.id);
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateProjectStatusDto,
+  ) {
+    return this.projects.updateProjectStatus(req.user.id, id, dto.status);
   }
 
   @Delete(':id')

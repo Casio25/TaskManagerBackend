@@ -41,7 +41,7 @@ export class AuthService {
 
   async login(dto: LoginDto) {
     const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
-    if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (!user) throw new UnauthorizedException('User not found');
     const ok = await this.comparePassword(dto.password, user.password);
     if (!ok) throw new UnauthorizedException('Invalid credentials');
     const access_token = this.signToken({ email: user.email });

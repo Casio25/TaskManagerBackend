@@ -2,6 +2,7 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
+import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
 import { MailService } from '../mail/mail.service';
 export declare class ProjectsController {
     private projects;
@@ -15,6 +16,13 @@ export declare class ProjectsController {
         createdAt: any;
         updatedAt: any;
         deadline: any;
+        status: any;
+        completedAt: any;
+        completedBy: {
+            id: any;
+            name: any;
+            email: any;
+        } | null;
         tasks: any;
     }>;
     invite(req: any, id: number, dto: CreateProjectInviteDto): Promise<{
@@ -57,6 +65,13 @@ export declare class ProjectsController {
             createdAt: any;
             updatedAt: any;
             deadline: any;
+            status: any;
+            completedAt: any;
+            completedBy: {
+                id: any;
+                name: any;
+                email: any;
+            } | null;
             tasks: any;
         }[];
         member: {
@@ -67,8 +82,32 @@ export declare class ProjectsController {
             createdAt: any;
             updatedAt: any;
             deadline: any;
+            status: any;
+            completedAt: any;
+            completedBy: {
+                id: any;
+                name: any;
+                email: any;
+            } | null;
             tasks: any;
         }[];
+    }>;
+    updateStatus(req: any, id: number, dto: UpdateProjectStatusDto): Promise<{
+        id: any;
+        name: any;
+        description: any;
+        color: any;
+        createdAt: any;
+        updatedAt: any;
+        deadline: any;
+        status: any;
+        completedAt: any;
+        completedBy: {
+            id: any;
+            name: any;
+            email: any;
+        } | null;
+        tasks: any;
     }>;
     remove(req: any, id: number): Promise<{
         success: boolean;

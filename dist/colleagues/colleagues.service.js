@@ -172,6 +172,19 @@ let ColleaguesService = class ColleaguesService {
             colleague: await this.buildColleagueResponse(ownerId, refreshedColleague),
         };
     }
+    async deleteList(ownerId, listId) {
+        const list = await this.prisma.colleagueList.findFirst({
+            where: { id: listId, ownerId },
+        });
+        if (!list)
+            throw new common_1.NotFoundException('List not found');
+        await this.prisma.$transaction(async (tx) => {
+            await tx.colleagueListMember.deleteMany({ where: { listId } });
+            await tx.colleagueList.delete({ where: { id: listId } });
+        });
+        await this.ensureDefaultLists(ownerId);
+        return { deletedId: listId };
+    }
     async removeFromList(ownerId, listId, colleagueId) {
         const list = await this.prisma.colleagueList.findFirst({
             where: { id: listId, ownerId },
@@ -266,6 +279,11 @@ let ColleaguesService = class ColleaguesService {
         if (!isAdmin) {
             throw new common_1.ForbiddenException('Only project admins can assign tasks');
         }
+        await this.prisma.projectMember.upsert({
+            where: { projectId_userId: { projectId: project.id, userId: colleague.contactId } },
+            create: { projectId: project.id, userId: colleague.contactId, role: 'MEMBER' },
+            update: {},
+        });
         const updatedTask = await this.prisma.task.update({
             where: { id: task.id },
             data: { assignedToId: colleague.contactId },

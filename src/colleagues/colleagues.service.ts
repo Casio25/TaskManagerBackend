@@ -314,6 +314,12 @@ export class ColleaguesService {
       throw new ForbiddenException('Only project admins can assign tasks');
     }
 
+    await this.prisma.projectMember.upsert({
+      where: { projectId_userId: { projectId: project.id, userId: colleague.contactId } },
+      create: { projectId: project.id, userId: colleague.contactId, role: 'MEMBER' },
+      update: {},
+    });
+
     const updatedTask = await this.prisma.task.update({
       where: { id: task.id },
       data: { assignedToId: colleague.contactId },

@@ -2,6 +2,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
+import { ProjectStatus } from '@prisma/client';
 export declare class ProjectsService {
     private prisma;
     constructor(prisma: PrismaService);
@@ -13,6 +14,13 @@ export declare class ProjectsService {
         createdAt: any;
         updatedAt: any;
         deadline: any;
+        status: any;
+        completedAt: any;
+        completedBy: {
+            id: any;
+            name: any;
+            email: any;
+        } | null;
         tasks: any;
     }>;
     private loadProjectWithTasks;
@@ -27,6 +35,9 @@ export declare class ProjectsService {
         creatorId: number;
         groupId: number | null;
         deadline: Date | null;
+        status: import(".prisma/client").$Enums.ProjectStatus;
+        completedAt: Date | null;
+        completedById: number | null;
     }>;
     createInvite(projectId: number, invitedById: number, dto: CreateProjectInviteDto): Promise<{
         invite: {
@@ -68,6 +79,13 @@ export declare class ProjectsService {
             createdAt: any;
             updatedAt: any;
             deadline: any;
+            status: any;
+            completedAt: any;
+            completedBy: {
+                id: any;
+                name: any;
+                email: any;
+            } | null;
             tasks: any;
         }[];
         member: {
@@ -78,8 +96,32 @@ export declare class ProjectsService {
             createdAt: any;
             updatedAt: any;
             deadline: any;
+            status: any;
+            completedAt: any;
+            completedBy: {
+                id: any;
+                name: any;
+                email: any;
+            } | null;
             tasks: any;
         }[];
+    }>;
+    updateProjectStatus(userId: number, projectId: number, status: ProjectStatus): Promise<{
+        id: any;
+        name: any;
+        description: any;
+        color: any;
+        createdAt: any;
+        updatedAt: any;
+        deadline: any;
+        status: any;
+        completedAt: any;
+        completedBy: {
+            id: any;
+            name: any;
+            email: any;
+        } | null;
+        tasks: any;
     }>;
     deleteProject(userId: number, projectId: number): Promise<{
         success: boolean;

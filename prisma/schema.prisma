@@ -37,6 +37,11 @@ enum ProjectRole {
   MEMBER
 }
 
+enum ProjectStatus {
+  ACTIVE
+  COMPLETED
+}
+
 enum InvitationStatus {
   PENDING
   ACCEPTED
@@ -45,41 +50,45 @@ enum InvitationStatus {
 }
 
 model User {
-  id            Int                   @id @default(autoincrement())
-  email         String                @unique
-  password      String
-  name          String
-  role          Role                  @default(MEMBER)
-  projects      Project[]             @relation("ProjectsCreated")
-  tasks         Task[]                @relation("AssignedTasks")
-  ownedGroups   Group[]               @relation("AdminGroups")
-  submissions   Submission[]
-  profRatings   ProfessionalRating[]
-  ratings       Rating[]
-  groups        UserGroup[]
-  projectMemberships ProjectMember[]
-  colleagues   Colleague[]           @relation("ColleagueOwner")
-  colleagueLinks Colleague[]          @relation("ColleagueContact")
-  colleagueLists ColleagueList[]      @relation("ColleagueLists")
-  sentGroupInvitations GroupInvitation[] @relation("GroupInvitesSent")
-  acceptedGroupInvitations GroupInvitation[] @relation("GroupInvitesAccepted")
-  sentProjectInvitations ProjectInvitation[] @relation("ProjectInvitesSent")
-  acceptedProjectInvitations ProjectInvitation[] @relation("ProjectInvitesAccepted")
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  id                         Int                  @id @default(autoincrement())
+  email                      String               @unique
+  password                   String
+  name                       String
+  role                       Role                 @default(MEMBER)
+  projects                   Project[]            @relation("ProjectsCreated")
+  tasks                      Task[]               @relation("AssignedTasks")
+  ownedGroups                Group[]              @relation("AdminGroups")
+  submissions                Submission[]
+  profRatings                ProfessionalRating[]
+  ratings                    Rating[]
+  tagPerformances            UserTagPerformance[]
+  groups                     UserGroup[]
+  projectMemberships         ProjectMember[]
+  submittedTasks             Task[]               @relation("TaskSubmittedBy")
+  approvedTasks              Task[]               @relation("TaskCompletedBy")
+  approvedProjects           Project[]            @relation("ProjectCompletedBy")
+  colleagues                 Colleague[]          @relation("ColleagueOwner")
+  colleagueLinks             Colleague[]          @relation("ColleagueContact")
+  colleagueLists             ColleagueList[]      @relation("ColleagueLists")
+  sentGroupInvitations       GroupInvitation[]    @relation("GroupInvitesSent")
+  acceptedGroupInvitations   GroupInvitation[]    @relation("GroupInvitesAccepted")
+  sentProjectInvitations     ProjectInvitation[]  @relation("ProjectInvitesSent")
+  acceptedProjectInvitations ProjectInvitation[]  @relation("ProjectInvitesAccepted")
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
 }
 
 model Group {
-  id        Int      @id @default(autoincrement())
-  name      String
-  adminId   Int
-  admin     User     @relation("AdminGroups", fields: [adminId], references: [id])
-  users     UserGroup[]
-  projects  Project[]
-  tasks     Task[]
+  id          Int               @id @default(autoincrement())
+  name        String
+  adminId     Int
+  admin       User              @relation("AdminGroups", fields: [adminId], references: [id])
+  users       UserGroup[]
+  projects    Project[]
+  tasks       Task[]
   invitations GroupInvitation[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
 }
 
 model UserGroup {
@@ -88,118 +97,157 @@ model UserGroup {
   groupId Int
   user    User  @relation(fields: [userId], references: [id])
   group   Group @relation(fields: [groupId], references: [id])
+
   @@unique([userId, groupId])
 }
 
 model Project {
-  id            Int                   @id @default(autoincrement())
+  id            Int                 @id @default(autoincrement())
   name          String
   description   String?
   color         String              @default("#2563eb")
   creatorId     Int
-  creator       User                  @relation("ProjectsCreated", fields: [creatorId], references: [id])
+  creator       User                @relation("ProjectsCreated", fields: [creatorId], references: [id])
   groupId       Int?
-  group         Group?                @relation(fields: [groupId], references: [id])
+  group         Group?              @relation(fields: [groupId], references: [id])
   tasks         Task[]
   ratings       Rating[]
   members       ProjectMember[]
   invitations   ProjectInvitation[]
   deadline      DateTime?
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  status        ProjectStatus       @default(ACTIVE)
+  completedAt   DateTime?
+  completedById Int?
+  completedBy   User?               @relation("ProjectCompletedBy", fields: [completedById], references: [id])
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
 }
 
 model Task {
-  id              Int                   @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   title           String
   description     String?
   projectId       Int
-  project         Project               @relation(fields: [projectId], references: [id])
+  project         Project      @relation(fields: [projectId], references: [id])
   parentTaskId    Int?
-  parentTask      Task?                 @relation("SubTasks", fields: [parentTaskId], references: [id])
-  subTasks        Task[]                @relation("SubTasks")
+  parentTask      Task?        @relation("SubTasks", fields: [parentTaskId], references: [id])
+  subTasks        Task[]       @relation("SubTasks")
   assignedToId    Int?
-  assignedTo      User?                 @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedTo      User?        @relation("AssignedTasks", fields: [assignedToId], references: [id])
   assignedGroupId Int?
-  assignedGroup   Group?                @relation(fields: [assignedGroupId], references: [id])
+  assignedGroup   Group?       @relation(fields: [assignedGroupId], references: [id])
   themeId         Int?
-  theme           Theme?                @relation(fields: [themeId], references: [id])
-  status          TaskStatus            @default(NEW)
+  theme           Theme?       @relation(fields: [themeId], references: [id])
+  status          TaskStatus   @default(NEW)
+  submittedAt     DateTime?
+  submittedById   Int?
+  submittedBy     User?        @relation("TaskSubmittedBy", fields: [submittedById], references: [id])
+  completedById   Int?
+  completedBy     User?        @relation("TaskCompletedBy", fields: [completedById], references: [id])
   deadline        DateTime?
   submissions     Submission[]
   tags            TaskTag[]
   ratings         Rating[]
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  completedAt     DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 }
 
 model Tag {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  tasks     TaskTag[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int                  @id @default(autoincrement())
+  name         String               @unique
+  tasks        TaskTag[]
+  performances UserTagPerformance[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
 }
 
 model TaskTag {
-  id      Int   @id @default(autoincrement())
-  taskId  Int
-  tagId   Int
-  task    Task  @relation(fields: [taskId], references: [id])
-  tag     Tag   @relation(fields: [tagId], references: [id])
+  id     Int  @id @default(autoincrement())
+  taskId Int
+  tagId  Int
+  task   Task @relation(fields: [taskId], references: [id])
+  tag    Tag  @relation(fields: [tagId], references: [id])
+
   @@unique([taskId, tagId])
 }
 
 model Submission {
-  id              Int                   @id @default(autoincrement())
-  taskId          Int
-  task            Task                  @relation(fields: [taskId], references: [id])
-  userId          Int
-  user            User                  @relation(fields: [userId], references: [id])
-  type            SubmissionType
-  status          SubmissionStatus      @default(PENDING)
-  content         String?
-  ratingId        Int?                  @unique
-  rating          Rating?               @relation(fields: [ratingId], references: [id])
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id        Int              @id @default(autoincrement())
+  taskId    Int
+  task      Task             @relation(fields: [taskId], references: [id])
+  userId    Int
+  user      User             @relation(fields: [userId], references: [id])
+  type      SubmissionType
+  status    SubmissionStatus @default(PENDING)
+  content   String?
+  ratingId  Int?             @unique
+  rating    Rating?          @relation(fields: [ratingId], references: [id])
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
 }
 
 model Rating {
-  id              Int                   @id @default(autoincrement())
-  quality         Int                   // 1-10
-  timeliness      Int                   // 1-10
-  comments        String?
-  userId          Int?
-  user            User?                 @relation(fields: [userId], references: [id])
-  projectId       Int?
-  project         Project?              @relation(fields: [projectId], references: [id])
-  taskId          Int?
-  task            Task?                 @relation(fields: [taskId], references: [id])
-  submission      Submission?
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id          Int         @id @default(autoincrement())
+  quality     Int // 1-10
+  punctuality Int // 1-10
+  teamwork    Int // 1-10
+  comments    String?
+  userId      Int
+  user        User        @relation(fields: [userId], references: [id])
+  projectId   Int?
+  project     Project?    @relation(fields: [projectId], references: [id])
+  taskId      Int
+  task        Task        @relation(fields: [taskId], references: [id])
+  submission  Submission?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([taskId, userId])
+}
+
+model UserTagPerformance {
+  id                 Int       @id @default(autoincrement())
+  userId             Int
+  tagId              Int
+  averagePunctuality Float     @default(0)
+  averageTeamwork    Float     @default(0)
+  averageQuality     Float     @default(0)
+  ratingsCount       Int       @default(0)
+  lastPunctuality    Int?
+  lastTeamwork       Int?
+  lastQuality        Int?
+  lastTaskId         Int?
+  lastRatedAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  tag  Tag  @relation(fields: [tagId], references: [id])
+
+  @@unique([userId, tagId])
 }
 
 model ProfessionalRating {
-  id              Int                   @id @default(autoincrement())
-  userId          Int
-  user            User                  @relation(fields: [userId], references: [id])
-  themeId         Int
-  theme           Theme                 @relation(fields: [themeId], references: [id])
-  rating          Float
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  themeId   Int
+  theme     Theme    @relation(fields: [themeId], references: [id])
+  rating    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@unique([userId, themeId])
 }
 
 model Theme {
-  id            Int                   @id @default(autoincrement())
-  name          String                @unique
-  tasks         Task[]
-  profRatings   ProfessionalRating[]
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  id          Int                  @id @default(autoincrement())
+  name        String               @unique
+  tasks       Task[]
+  profRatings ProfessionalRating[]
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
 }
 
 model ProjectMember {
@@ -216,43 +264,44 @@ model ProjectMember {
 }
 
 model GroupInvitation {
-  id           Int               @id @default(autoincrement())
+  id           Int              @id @default(autoincrement())
   email        String
   groupId      Int
-  group        Group             @relation(fields: [groupId], references: [id])
+  group        Group            @relation(fields: [groupId], references: [id])
   invitedById  Int
-  invitedBy    User              @relation("GroupInvitesSent", fields: [invitedById], references: [id])
-  tokenHash    String            @unique
-  status       InvitationStatus  @default(PENDING)
+  invitedBy    User             @relation("GroupInvitesSent", fields: [invitedById], references: [id])
+  tokenHash    String           @unique
+  status       InvitationStatus @default(PENDING)
   expiresAt    DateTime?
   acceptedById Int?
-  acceptedBy   User?             @relation("GroupInvitesAccepted", fields: [acceptedById], references: [id])
+  acceptedBy   User?            @relation("GroupInvitesAccepted", fields: [acceptedById], references: [id])
   acceptedAt   DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
+
 model Colleague {
-  id        Int      @id @default(autoincrement())
-  ownerId   Int
-  owner     User     @relation("ColleagueOwner", fields: [ownerId], references: [id])
-  email     String
-  contactId Int?
-  contact   User?    @relation("ColleagueContact", fields: [contactId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              Int                   @id @default(autoincrement())
+  ownerId         Int
+  owner           User                  @relation("ColleagueOwner", fields: [ownerId], references: [id])
+  email           String
+  contactId       Int?
+  contact         User?                 @relation("ColleagueContact", fields: [contactId], references: [id])
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
   listMemberships ColleagueListMember[]
 
   @@unique([ownerId, email])
 }
 
 model ColleagueList {
-  id        Int      @id @default(autoincrement())
+  id        Int                   @id @default(autoincrement())
   ownerId   Int
-  owner     User     @relation("ColleagueLists", fields: [ownerId], references: [id])
+  owner     User                  @relation("ColleagueLists", fields: [ownerId], references: [id])
   name      String
   members   ColleagueListMember[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
 
   @@unique([ownerId, name])
 }
@@ -268,22 +317,19 @@ model ColleagueListMember {
   @@unique([listId, colleagueId])
 }
 
-
 model ProjectInvitation {
-  id           Int               @id @default(autoincrement())
+  id           Int              @id @default(autoincrement())
   email        String
   projectId    Int
-  project      Project           @relation(fields: [projectId], references: [id])
+  project      Project          @relation(fields: [projectId], references: [id])
   invitedById  Int
-  invitedBy    User              @relation("ProjectInvitesSent", fields: [invitedById], references: [id])
-  tokenHash    String            @unique
-  status       InvitationStatus  @default(PENDING)
+  invitedBy    User             @relation("ProjectInvitesSent", fields: [invitedById], references: [id])
+  tokenHash    String           @unique
+  status       InvitationStatus @default(PENDING)
   expiresAt    DateTime?
   acceptedById Int?
-  acceptedBy   User?             @relation("ProjectInvitesAccepted", fields: [acceptedById], references: [id])
+  acceptedBy   User?            @relation("ProjectInvitesAccepted", fields: [acceptedById], references: [id])
   acceptedAt   DateTime?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
 }
-
-

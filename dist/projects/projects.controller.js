@@ -19,6 +19,7 @@ const projects_service_1 = require("./projects.service");
 const create_project_dto_1 = require("./dto/create-project.dto");
 const create_project_invite_dto_1 = require("./dto/create-project-invite.dto");
 const accept_project_invite_dto_1 = require("./dto/accept-project-invite.dto");
+const update_project_status_dto_1 = require("./dto/update-project-status.dto");
 const mail_service_1 = require("../mail/mail.service");
 let ProjectsController = class ProjectsController {
     projects;
@@ -42,6 +43,9 @@ let ProjectsController = class ProjectsController {
     }
     async mine(req) {
         return this.projects.myProjects(req.user.id);
+    }
+    async updateStatus(req, id, dto) {
+        return this.projects.updateProjectStatus(req.user.id, id, dto.status);
     }
     async remove(req, id) {
         return this.projects.deleteProject(req.user.id, id);
@@ -80,6 +84,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], ProjectsController.prototype, "mine", null);
+__decorate([
+    (0, common_1.Patch)(':id/status'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, update_project_status_dto_1.UpdateProjectStatusDto]),
+    __metadata("design:returntype", Promise)
+], ProjectsController.prototype, "updateStatus", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     __param(0, (0, common_1.Req)()),

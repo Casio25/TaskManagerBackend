@@ -41,6 +41,9 @@ let ColleaguesController = class ColleaguesController {
     addToList(req, id, dto) {
         return this.colleagues.addToList(req.user.id, id, dto);
     }
+    deleteList(req, id) {
+        return this.colleagues.deleteList(req.user.id, id);
+    }
     removeFromList(req, id, colleagueId) {
         return this.colleagues.removeFromList(req.user.id, id, colleagueId);
     }
@@ -91,6 +94,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, add_to_list_dto_1.AddToListDto]),
     __metadata("design:returntype", void 0)
 ], ColleaguesController.prototype, "addToList", null);
+__decorate([
+    (0, common_1.Delete)('lists/:id'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], ColleaguesController.prototype, "deleteList", null);
 __decorate([
     (0, common_1.Delete)('lists/:id/members/:colleagueId'),
     __param(0, (0, common_1.Req)()),

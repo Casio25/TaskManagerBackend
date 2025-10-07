@@ -12,6 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProjectsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const client_1 = require("@prisma/client");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 function makeToken(inviteId, secret) {
@@ -112,15 +113,14 @@ let ProjectsService = class ProjectsService {
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
             include: {
+                completedBy: { select: { id: true, name: true, email: true } },
                 tasks: {
                     orderBy: { deadline: 'asc' },
                     include: {
-                        tags: {
-                            include: { tag: true },
-                        },
-                        assignedTo: {
-                            select: { id: true, name: true, email: true },
-                        },
+                        tags: { include: { tag: true } },
+                        assignedTo: { select: { id: true, name: true, email: true } },
+                        submittedBy: { select: { id: true, name: true, email: true } },
+                        completedBy: { select: { id: true, name: true, email: true } },
                     },
                 },
             },
@@ -139,12 +139,25 @@ let ProjectsService = class ProjectsService {
             createdAt: project.createdAt,
             updatedAt: project.updatedAt,
             deadline: project.deadline,
+            status: project.status,
+            completedAt: project.completedAt,
+            completedBy: project.completedBy
+                ? { id: project.completedBy.id, name: project.completedBy.name, email: project.completedBy.email }
+                : null,
             tasks: (project.tasks ?? []).map((task) => ({
                 id: task.id,
                 title: task.title,
                 description: task.description,
                 status: task.status,
                 deadline: task.deadline,
+                submittedAt: task.submittedAt,
+                completedAt: task.completedAt,
+                submittedBy: task.submittedBy
+                    ? { id: task.submittedBy.id, name: task.submittedBy.name, email: task.submittedBy.email }
+                    : null,
+                completedBy: task.completedBy
+                    ? { id: task.completedBy.id, name: task.completedBy.name, email: task.completedBy.email }
+                    : null,
                 tags: (task.tags ?? []).map((tag) => tag.tag.name),
                 assignedTo: task.assignedTo
                     ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
@@ -218,15 +231,14 @@ let ProjectsService = class ProjectsService {
             include: {
                 project: {
                     include: {
+                        completedBy: { select: { id: true, name: true, email: true } },
                         tasks: {
                             orderBy: { deadline: 'asc' },
                             include: {
-                                tags: {
-                                    include: { tag: true },
-                                },
-                                assignedTo: {
-                                    select: { id: true, name: true, email: true },
-                                },
+                                tags: { include: { tag: true } },
+                                assignedTo: { select: { id: true, name: true, email: true } },
+                                submittedBy: { select: { id: true, name: true, email: true } },
+                                completedBy: { select: { id: true, name: true, email: true } },
                             },
                         },
                     },
@@ -241,6 +253,26 @@ let ProjectsService = class ProjectsService {
             .filter((membership) => membership.role === 'MEMBER')
             .map((membership) => this.mapProject(membership.project));
         return { admin, member };
+    }
+    async updateProjectStatus(userId, projectId, status) {
+        const project = await this.ensureProjectAdmin(projectId, userId);
+        const data = { status };
+        if (status === client_1.ProjectStatus.COMPLETED) {
+            const now = new Date();
+            data.completedAt = project.completedAt ?? now;
+            data.completedBy = { connect: { id: userId } };
+        }
+        else {
+            data.completedAt = null;
+            if (project.completedById) {
+                data.completedBy = { disconnect: true };
+            }
+        }
+        await this.prisma.project.update({
+            where: { id: projectId },
+            data,
+        });
+        return this.loadProjectWithTasks(projectId);
     }
     async deleteProject(userId, projectId) {
         await this.ensureProjectAdmin(projectId, userId);

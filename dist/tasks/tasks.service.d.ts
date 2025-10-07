@@ -1,6 +1,7 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { RateTaskDto } from './dto/rate-task.dto';
 export declare class TasksService {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -17,6 +18,9 @@ export declare class TasksService {
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
         };
         theme: {
             name: string;
@@ -31,6 +35,8 @@ export declare class TasksService {
             assignedTo: number;
             assignedGroup: number;
             theme: number;
+            submittedBy: number;
+            completedBy: number;
             submissions: number;
             tags: number;
             ratings: number;
@@ -40,23 +46,33 @@ export declare class TasksService {
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number;
             status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
             type: import(".prisma/client").$Enums.SubmissionType;
             content: string | null;
             ratingId: number | null;
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number | null;
+            taskId: number;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number | null;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
             quality: number;
-            timeliness: number;
             comments: string | null;
         }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         parentTask: {
             projectId: number;
             id: number;
@@ -64,12 +80,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         } | null;
         subTasks: {
             projectId: number;
@@ -78,12 +98,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         }[];
         assignedTo: {
             email: string;
@@ -101,6 +125,15 @@ export declare class TasksService {
             updatedAt: Date;
             adminId: number;
         } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         tags: {
             taskId: number;
             id: number;
@@ -113,12 +146,16 @@ export declare class TasksService {
         updatedAt: Date;
         description: string | null;
         deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
         title: string;
         parentTaskId: number | null;
         assignedToId: number | null;
         assignedGroupId: number | null;
         themeId: number | null;
-        status: import(".prisma/client").$Enums.TaskStatus;
+        submittedAt: Date | null;
+        submittedById: number | null;
     }>;
     updateTask(userId: number, taskId: number, dto: UpdateTaskDto): Promise<{
         project: {
@@ -131,6 +168,9 @@ export declare class TasksService {
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
         };
         theme: {
             name: string;
@@ -145,6 +185,8 @@ export declare class TasksService {
             assignedTo: number;
             assignedGroup: number;
             theme: number;
+            submittedBy: number;
+            completedBy: number;
             submissions: number;
             tags: number;
             ratings: number;
@@ -154,23 +196,33 @@ export declare class TasksService {
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number;
             status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
             type: import(".prisma/client").$Enums.SubmissionType;
             content: string | null;
             ratingId: number | null;
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number | null;
+            taskId: number;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number | null;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
             quality: number;
-            timeliness: number;
             comments: string | null;
         }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         parentTask: {
             projectId: number;
             id: number;
@@ -178,12 +230,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         } | null;
         subTasks: {
             projectId: number;
@@ -192,12 +248,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         }[];
         assignedTo: {
             email: string;
@@ -215,6 +275,15 @@ export declare class TasksService {
             updatedAt: Date;
             adminId: number;
         } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         tags: {
             taskId: number;
             id: number;
@@ -227,12 +296,16 @@ export declare class TasksService {
         updatedAt: Date;
         description: string | null;
         deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
         title: string;
         parentTaskId: number | null;
         assignedToId: number | null;
         assignedGroupId: number | null;
         themeId: number | null;
-        status: import(".prisma/client").$Enums.TaskStatus;
+        submittedAt: Date | null;
+        submittedById: number | null;
     }>;
     listProjectTasks(userId: number, projectId: number): Promise<({
         project: {
@@ -245,6 +318,9 @@ export declare class TasksService {
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
         };
         theme: {
             name: string;
@@ -259,6 +335,8 @@ export declare class TasksService {
             assignedTo: number;
             assignedGroup: number;
             theme: number;
+            submittedBy: number;
+            completedBy: number;
             submissions: number;
             tags: number;
             ratings: number;
@@ -268,23 +346,33 @@ export declare class TasksService {
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number;
             status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
             type: import(".prisma/client").$Enums.SubmissionType;
             content: string | null;
             ratingId: number | null;
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number | null;
+            taskId: number;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number | null;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
             quality: number;
-            timeliness: number;
             comments: string | null;
         }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         parentTask: {
             projectId: number;
             id: number;
@@ -292,12 +380,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         } | null;
         subTasks: {
             projectId: number;
@@ -306,12 +398,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         }[];
         assignedTo: {
             email: string;
@@ -329,6 +425,15 @@ export declare class TasksService {
             updatedAt: Date;
             adminId: number;
         } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         tags: {
             taskId: number;
             id: number;
@@ -341,12 +446,16 @@ export declare class TasksService {
         updatedAt: Date;
         description: string | null;
         deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
         title: string;
         parentTaskId: number | null;
         assignedToId: number | null;
         assignedGroupId: number | null;
         themeId: number | null;
-        status: import(".prisma/client").$Enums.TaskStatus;
+        submittedAt: Date | null;
+        submittedById: number | null;
     })[]>;
     listUserTasks(userId: number): Promise<({
         project: {
@@ -359,6 +468,9 @@ export declare class TasksService {
             creatorId: number;
             groupId: number | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
         };
         theme: {
             name: string;
@@ -373,6 +485,8 @@ export declare class TasksService {
             assignedTo: number;
             assignedGroup: number;
             theme: number;
+            submittedBy: number;
+            completedBy: number;
             submissions: number;
             tags: number;
             ratings: number;
@@ -382,23 +496,33 @@ export declare class TasksService {
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number;
             status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
             type: import(".prisma/client").$Enums.SubmissionType;
             content: string | null;
             ratingId: number | null;
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number | null;
+            taskId: number;
             id: number;
             createdAt: Date;
             updatedAt: Date;
-            userId: number | null;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
             quality: number;
-            timeliness: number;
             comments: string | null;
         }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         parentTask: {
             projectId: number;
             id: number;
@@ -406,12 +530,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         } | null;
         subTasks: {
             projectId: number;
@@ -420,12 +548,16 @@ export declare class TasksService {
             updatedAt: Date;
             description: string | null;
             deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
             title: string;
             parentTaskId: number | null;
             assignedToId: number | null;
             assignedGroupId: number | null;
             themeId: number | null;
-            status: import(".prisma/client").$Enums.TaskStatus;
+            submittedAt: Date | null;
+            submittedById: number | null;
         }[];
         assignedTo: {
             email: string;
@@ -443,6 +575,15 @@ export declare class TasksService {
             updatedAt: Date;
             adminId: number;
         } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
         tags: {
             taskId: number;
             id: number;
@@ -455,12 +596,325 @@ export declare class TasksService {
         updatedAt: Date;
         description: string | null;
         deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
         title: string;
         parentTaskId: number | null;
         assignedToId: number | null;
         assignedGroupId: number | null;
         themeId: number | null;
-        status: import(".prisma/client").$Enums.TaskStatus;
+        submittedAt: Date | null;
+        submittedById: number | null;
     })[]>;
+    completeTask(userId: number, taskId: number): Promise<({
+        project: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            color: string;
+            creatorId: number;
+            groupId: number | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+        };
+        theme: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        _count: {
+            project: number;
+            parentTask: number;
+            subTasks: number;
+            assignedTo: number;
+            assignedGroup: number;
+            theme: number;
+            submittedBy: number;
+            completedBy: number;
+            submissions: number;
+            tags: number;
+            ratings: number;
+        };
+        submissions: {
+            taskId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
+            type: import(".prisma/client").$Enums.SubmissionType;
+            content: string | null;
+            ratingId: number | null;
+        }[];
+        ratings: {
+            projectId: number | null;
+            taskId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+            comments: string | null;
+        }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        parentTask: {
+            projectId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+            title: string;
+            parentTaskId: number | null;
+            assignedToId: number | null;
+            assignedGroupId: number | null;
+            themeId: number | null;
+            submittedAt: Date | null;
+            submittedById: number | null;
+        } | null;
+        subTasks: {
+            projectId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+            title: string;
+            parentTaskId: number | null;
+            assignedToId: number | null;
+            assignedGroupId: number | null;
+            themeId: number | null;
+            submittedAt: Date | null;
+            submittedById: number | null;
+        }[];
+        assignedTo: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        assignedGroup: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            adminId: number;
+        } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        tags: {
+            taskId: number;
+            id: number;
+            tagId: number;
+        }[];
+    } & {
+        projectId: number;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
+        title: string;
+        parentTaskId: number | null;
+        assignedToId: number | null;
+        assignedGroupId: number | null;
+        themeId: number | null;
+        submittedAt: Date | null;
+        submittedById: number | null;
+    }) | null>;
+    reopenTask(userId: number, taskId: number): Promise<({
+        project: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            color: string;
+            creatorId: number;
+            groupId: number | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.ProjectStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+        };
+        theme: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+        } | null;
+        _count: {
+            project: number;
+            parentTask: number;
+            subTasks: number;
+            assignedTo: number;
+            assignedGroup: number;
+            theme: number;
+            submittedBy: number;
+            completedBy: number;
+            submissions: number;
+            tags: number;
+            ratings: number;
+        };
+        submissions: {
+            taskId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import(".prisma/client").$Enums.SubmissionStatus;
+            userId: number;
+            type: import(".prisma/client").$Enums.SubmissionType;
+            content: string | null;
+            ratingId: number | null;
+        }[];
+        ratings: {
+            projectId: number | null;
+            taskId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+            comments: string | null;
+        }[];
+        completedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        parentTask: {
+            projectId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+            title: string;
+            parentTaskId: number | null;
+            assignedToId: number | null;
+            assignedGroupId: number | null;
+            themeId: number | null;
+            submittedAt: Date | null;
+            submittedById: number | null;
+        } | null;
+        subTasks: {
+            projectId: number;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            description: string | null;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            completedAt: Date | null;
+            completedById: number | null;
+            title: string;
+            parentTaskId: number | null;
+            assignedToId: number | null;
+            assignedGroupId: number | null;
+            themeId: number | null;
+            submittedAt: Date | null;
+            submittedById: number | null;
+        }[];
+        assignedTo: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        assignedGroup: {
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            adminId: number;
+        } | null;
+        submittedBy: {
+            email: string;
+            name: string;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            password: string;
+            role: import(".prisma/client").$Enums.Role;
+        } | null;
+        tags: {
+            taskId: number;
+            id: number;
+            tagId: number;
+        }[];
+    } & {
+        projectId: number;
+        id: number;
+        createdAt: Date;
+        updatedAt: Date;
+        description: string | null;
+        deadline: Date | null;
+        status: import(".prisma/client").$Enums.TaskStatus;
+        completedAt: Date | null;
+        completedById: number | null;
+        title: string;
+        parentTaskId: number | null;
+        assignedToId: number | null;
+        assignedGroupId: number | null;
+        themeId: number | null;
+        submittedAt: Date | null;
+        submittedById: number | null;
+    }) | null>;
+    rateTask(userId: number, taskId: number, dto: RateTaskDto): Promise<{
+        rating: any;
+        performances: {
+            tagId: number;
+            tagName: string;
+            summary: any;
+        }[];
+    }>;
+    private recalculateTagPerformance;
     private taskInclude;
 }

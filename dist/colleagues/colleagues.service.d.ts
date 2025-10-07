@@ -97,6 +97,9 @@ export declare class ColleaguesService {
             lists: any;
         };
     }>;
+    deleteList(ownerId: number, listId: number): Promise<{
+        deletedId: number;
+    }>;
     removeFromList(ownerId: number, listId: number, colleagueId: number): Promise<{
         list: {
             id: any;
@@ -155,8 +158,8 @@ export declare class ColleaguesService {
             projectId: number;
             id: number;
             deadline: Date | null;
-            title: string;
             status: import(".prisma/client").$Enums.TaskStatus;
+            title: string;
             assignedTo: {
                 email: string;
                 name: string;

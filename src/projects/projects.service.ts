@@ -3,7 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
-import { Prisma, ProjectStatus } from '@prisma/client';
+import { Prisma, ProjectStatus, RatingScope } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 

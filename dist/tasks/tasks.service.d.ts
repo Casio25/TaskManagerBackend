@@ -54,7 +54,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -63,6 +63,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -204,7 +206,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -213,6 +215,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -354,7 +358,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -363,6 +367,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -504,7 +510,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -513,6 +519,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -654,7 +662,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -663,6 +671,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -804,7 +814,7 @@ export declare class TasksService {
         }[];
         ratings: {
             projectId: number | null;
-            taskId: number;
+            taskId: number | null;
             id: number;
             createdAt: Date;
             updatedAt: Date;
@@ -813,6 +823,8 @@ export declare class TasksService {
             teamwork: number;
             quality: number;
             comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
         }[];
         completedBy: {
             email: string;
@@ -908,7 +920,20 @@ export declare class TasksService {
         submittedById: number | null;
     }) | null>;
     rateTask(userId: number, taskId: number, dto: RateTaskDto): Promise<{
-        rating: any;
+        rating: {
+            projectId: number | null;
+            taskId: number | null;
+            id: number;
+            createdAt: Date;
+            updatedAt: Date;
+            userId: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+            comments: string | null;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            ratedById: number;
+        };
         performances: {
             tagId: number;
             tagName: string;

@@ -367,32 +367,33 @@ let TasksService = class TasksService {
         const assigneeId = task.assignedTo.id;
         const tagLinks = task.tags ?? [];
         const result = await this.prisma.$transaction(async (tx) => {
-            const existing = await tx.rating.findFirst({
-                where: { taskId, userId: assigneeId },
-            });
-            const ratingData = {
-                punctuality: dto.punctuality,
-                teamwork: dto.teamwork,
-                quality: dto.quality,
-                comments: dto.comments ?? null,
-            };
-            let rating;
-            if (existing) {
-                rating = await tx.rating.update({
-                    where: { id: existing.id },
-                    data: ratingData,
-                });
-            }
-            else {
-                rating = await tx.rating.create({
-                    data: {
-                        ...ratingData,
-                        user: { connect: { id: assigneeId } },
-                        task: { connect: { id: taskId } },
-                        project: { connect: { id: task.project.id } },
+            const rating = await tx.rating.upsert({
+                where: {
+                    taskId_userId_scope: {
+                        taskId,
+                        userId: assigneeId,
+                        scope: client_1.RatingScope.TASK,
                     },
-                });
-            }
+                },
+                update: {
+                    punctuality: dto.punctuality,
+                    teamwork: dto.teamwork,
+                    quality: dto.quality,
+                    comments: dto.comments ?? null,
+                    ratedBy: { connect: { id: userId } },
+                },
+                create: {
+                    scope: client_1.RatingScope.TASK,
+                    punctuality: dto.punctuality,
+                    teamwork: dto.teamwork,
+                    quality: dto.quality,
+                    comments: dto.comments ?? null,
+                    user: { connect: { id: assigneeId } },
+                    ratedBy: { connect: { id: userId } },
+                    task: { connect: { id: taskId } },
+                    project: { connect: { id: task.project.id } },
+                },
+            });
             const summaries = [];
             for (const link of tagLinks) {
                 const summary = await this.recalculateTagPerformance(tx, assigneeId, link.tagId);
@@ -413,6 +414,7 @@ let TasksService = class TasksService {
             _count: { _all: true },
             where: {
                 userId,
+                scope: client_1.RatingScope.TASK,
                 task: {
                     tags: {
                         some: { tagId },
@@ -430,6 +432,7 @@ let TasksService = class TasksService {
         const last = await tx.rating.findFirst({
             where: {
                 userId,
+                scope: client_1.RatingScope.TASK,
                 task: {
                     tags: {
                         some: { tagId },

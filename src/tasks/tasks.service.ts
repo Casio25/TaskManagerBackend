@@ -1,6 +1,6 @@
 
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, ProjectRole, TaskStatus } from '@prisma/client';
+import { Prisma, ProjectRole, RatingScope, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
@@ -371,32 +371,33 @@ export class TasksService {
     const tagLinks = task.tags ?? [];
 
     const result = await this.prisma.$transaction(async (tx) => {
-      const existing = await tx.rating.findFirst({
-        where: { taskId, userId: assigneeId },
-      });
-      const ratingData = {
-        punctuality: dto.punctuality,
-        teamwork: dto.teamwork,
-        quality: dto.quality,
-        comments: dto.comments ?? null,
-      };
-      let rating;
-      if (existing) {
-        rating = await tx.rating.update({
-          where: { id: existing.id },
-          data: ratingData,
-        });
-      } else {
-        rating = await tx.rating.create({
-          data: {
-            ...ratingData,
-            user: { connect: { id: assigneeId } },
-            task: { connect: { id: taskId } },
-            project: { connect: { id: task.project.id } },
+      const rating = await tx.rating.upsert({
+        where: {
+          taskId_userId_scope: {
+            taskId,
+            userId: assigneeId,
+            scope: RatingScope.TASK,
           },
-        });
-      }
-
+        },
+        update: {
+          punctuality: dto.punctuality,
+          teamwork: dto.teamwork,
+          quality: dto.quality,
+          comments: dto.comments ?? null,
+          ratedBy: { connect: { id: userId } },
+        },
+        create: {
+          scope: RatingScope.TASK,
+          punctuality: dto.punctuality,
+          teamwork: dto.teamwork,
+          quality: dto.quality,
+          comments: dto.comments ?? null,
+          user: { connect: { id: assigneeId } },
+          ratedBy: { connect: { id: userId } },
+          task: { connect: { id: taskId } },
+          project: { connect: { id: task.project.id } },
+        },
+      });
       const summaries: Array<{ tagId: number; data: any }> = [];
       for (const link of tagLinks) {
         const summary = await this.recalculateTagPerformance(
@@ -406,19 +407,17 @@ export class TasksService {
         );
         summaries.push({ tagId: link.tagId, data: summary });
       }
-
       return { rating, summaries };
     });
-
     const performances = tagLinks.map((link) => {
       const summary =
         result.summaries.find((item) => item.tagId === link.tagId)?.data ||
         null;
       return { tagId: link.tagId, tagName: link.tag.name, summary };
     });
-
     return { rating: result.rating, performances };
-  }
+
+ }
 
   private async recalculateTagPerformance(
     tx: Prisma.TransactionClient,
@@ -430,6 +429,7 @@ export class TasksService {
       _count: { _all: true },
       where: {
         userId,
+        scope: RatingScope.TASK,
         task: {
           tags: {
             some: { tagId },
@@ -449,6 +449,7 @@ export class TasksService {
     const last = await tx.rating.findFirst({
       where: {
         userId,
+        scope: RatingScope.TASK,
         task: {
           tags: {
             some: { tagId },

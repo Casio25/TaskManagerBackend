@@ -7,16 +7,9 @@ import { AddToListDto } from './dto/add-to-list.dto';
 export declare class ColleaguesController {
     private readonly colleagues;
     constructor(colleagues: ColleaguesService);
-    list(req: any): Promise<{
-        assignedProjects: {
-            name: string;
-            id: number;
-        }[];
-        assignedTasks: {
-            projectId: number;
-            id: number;
-            title: string;
-        }[];
+    list(req: any): Promise<({
+        assignedProjects: never[];
+        assignedTasks: never[];
         id: any;
         email: any;
         createdAt: any;
@@ -28,8 +21,7 @@ export declare class ColleaguesController {
             role: any;
         } | null;
         lists: any;
-    }[]>;
-    create(req: any, dto: CreateColleagueDto): Promise<{
+    } | {
         assignedProjects: {
             name: string;
             id: number;
@@ -39,6 +31,114 @@ export declare class ColleaguesController {
             id: number;
             title: string;
         }[];
+        pendingProjectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+        }[];
+        projectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+            rating: {
+                id: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+                comments: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                ratedBy: {
+                    id: number;
+                    name: string;
+                    email: string;
+                } | null;
+            };
+        }[];
+        completedProjects: number;
+        completedTasks: number;
+        projectRatingAverages: {
+            count: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+        } | null;
+        id: any;
+        email: any;
+        createdAt: any;
+        updatedAt: any;
+        contact: {
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+        } | null;
+        lists: any;
+    })[]>;
+    create(req: any, dto: CreateColleagueDto): Promise<{
+        assignedProjects: never[];
+        assignedTasks: never[];
+        id: any;
+        email: any;
+        createdAt: any;
+        updatedAt: any;
+        contact: {
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+        } | null;
+        lists: any;
+    } | {
+        assignedProjects: {
+            name: string;
+            id: number;
+        }[];
+        assignedTasks: {
+            projectId: number;
+            id: number;
+            title: string;
+        }[];
+        pendingProjectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+        }[];
+        projectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+            rating: {
+                id: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+                comments: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                ratedBy: {
+                    id: number;
+                    name: string;
+                    email: string;
+                } | null;
+            };
+        }[];
+        completedProjects: number;
+        completedTasks: number;
+        projectRatingAverages: {
+            count: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+        } | null;
         id: any;
         email: any;
         createdAt: any;
@@ -74,6 +174,20 @@ export declare class ColleaguesController {
             members: any;
         };
         colleague: {
+            assignedProjects: never[];
+            assignedTasks: never[];
+            id: any;
+            email: any;
+            createdAt: any;
+            updatedAt: any;
+            contact: {
+                id: any;
+                email: any;
+                name: any;
+                role: any;
+            } | null;
+            lists: any;
+        } | {
             assignedProjects: {
                 name: string;
                 id: number;
@@ -83,6 +197,42 @@ export declare class ColleaguesController {
                 id: number;
                 title: string;
             }[];
+            pendingProjectRatings: {
+                projectId: number;
+                projectName: string;
+                deadline: Date | null;
+                completedAt: Date | null;
+                color: string;
+            }[];
+            projectRatings: {
+                projectId: number;
+                projectName: string;
+                deadline: Date | null;
+                completedAt: Date | null;
+                color: string;
+                rating: {
+                    id: number;
+                    punctuality: number;
+                    teamwork: number;
+                    quality: number;
+                    comments: string | null;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    ratedBy: {
+                        id: number;
+                        name: string;
+                        email: string;
+                    } | null;
+                };
+            }[];
+            completedProjects: number;
+            completedTasks: number;
+            projectRatingAverages: {
+                count: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+            } | null;
             id: any;
             email: any;
             createdAt: any;
@@ -108,6 +258,20 @@ export declare class ColleaguesController {
             members: any;
         };
         colleague: {
+            assignedProjects: never[];
+            assignedTasks: never[];
+            id: any;
+            email: any;
+            createdAt: any;
+            updatedAt: any;
+            contact: {
+                id: any;
+                email: any;
+                name: any;
+                role: any;
+            } | null;
+            lists: any;
+        } | {
             assignedProjects: {
                 name: string;
                 id: number;
@@ -117,6 +281,42 @@ export declare class ColleaguesController {
                 id: number;
                 title: string;
             }[];
+            pendingProjectRatings: {
+                projectId: number;
+                projectName: string;
+                deadline: Date | null;
+                completedAt: Date | null;
+                color: string;
+            }[];
+            projectRatings: {
+                projectId: number;
+                projectName: string;
+                deadline: Date | null;
+                completedAt: Date | null;
+                color: string;
+                rating: {
+                    id: number;
+                    punctuality: number;
+                    teamwork: number;
+                    quality: number;
+                    comments: string | null;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    ratedBy: {
+                        id: number;
+                        name: string;
+                        email: string;
+                    } | null;
+                };
+            }[];
+            completedProjects: number;
+            completedTasks: number;
+            projectRatingAverages: {
+                count: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+            } | null;
             id: any;
             email: any;
             createdAt: any;
@@ -131,6 +331,20 @@ export declare class ColleaguesController {
         };
     }>;
     assignProject(req: any, id: number, dto: AssignProjectDto): Promise<{
+        assignedProjects: never[];
+        assignedTasks: never[];
+        id: any;
+        email: any;
+        createdAt: any;
+        updatedAt: any;
+        contact: {
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+        } | null;
+        lists: any;
+    } | {
         assignedProjects: {
             name: string;
             id: number;
@@ -140,6 +354,42 @@ export declare class ColleaguesController {
             id: number;
             title: string;
         }[];
+        pendingProjectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+        }[];
+        projectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+            rating: {
+                id: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+                comments: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                ratedBy: {
+                    id: number;
+                    name: string;
+                    email: string;
+                } | null;
+            };
+        }[];
+        completedProjects: number;
+        completedTasks: number;
+        projectRatingAverages: {
+            count: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+        } | null;
         id: any;
         email: any;
         createdAt: any;
@@ -165,6 +415,32 @@ export declare class ColleaguesController {
                 id: number;
             } | null;
         };
+        assignedProjects: never[];
+        assignedTasks: never[];
+        id: any;
+        email: any;
+        createdAt: any;
+        updatedAt: any;
+        contact: {
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+        } | null;
+        lists: any;
+    } | {
+        lastAssignedTask: {
+            projectId: number;
+            id: number;
+            deadline: Date | null;
+            status: import(".prisma/client").$Enums.TaskStatus;
+            title: string;
+            assignedTo: {
+                email: string;
+                name: string;
+                id: number;
+            } | null;
+        };
         assignedProjects: {
             name: string;
             id: number;
@@ -174,6 +450,42 @@ export declare class ColleaguesController {
             id: number;
             title: string;
         }[];
+        pendingProjectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+        }[];
+        projectRatings: {
+            projectId: number;
+            projectName: string;
+            deadline: Date | null;
+            completedAt: Date | null;
+            color: string;
+            rating: {
+                id: number;
+                punctuality: number;
+                teamwork: number;
+                quality: number;
+                comments: string | null;
+                createdAt: Date;
+                updatedAt: Date;
+                ratedBy: {
+                    id: number;
+                    name: string;
+                    email: string;
+                } | null;
+            };
+        }[];
+        completedProjects: number;
+        completedTasks: number;
+        projectRatingAverages: {
+            count: number;
+            punctuality: number;
+            teamwork: number;
+            quality: number;
+        } | null;
         id: any;
         email: any;
         createdAt: any;

@@ -18,6 +18,7 @@ const jwt_auth_guard_1 = require("../auth/guards/jwt-auth.guard");
 const tasks_service_1 = require("./tasks.service");
 const create_task_dto_1 = require("./dto/create-task.dto");
 const update_task_dto_1 = require("./dto/update-task.dto");
+const rate_task_dto_1 = require("./dto/rate-task.dto");
 let TasksController = class TasksController {
     tasks;
     constructor(tasks) {
@@ -28,6 +29,15 @@ let TasksController = class TasksController {
     }
     update(req, id, dto) {
         return this.tasks.updateTask(req.user.id, id, dto);
+    }
+    complete(req, id) {
+        return this.tasks.completeTask(req.user.id, id);
+    }
+    reopen(req, id) {
+        return this.tasks.reopenTask(req.user.id, id);
+    }
+    rate(req, id, dto) {
+        return this.tasks.rateTask(req.user.id, id, dto);
     }
     byProject(req, id) {
         return this.tasks.listProjectTasks(req.user.id, id);
@@ -54,6 +64,31 @@ __decorate([
     __metadata("design:paramtypes", [Object, Number, update_task_dto_1.UpdateTaskDto]),
     __metadata("design:returntype", void 0)
 ], TasksController.prototype, "update", null);
+__decorate([
+    (0, common_1.Post)(':id/complete'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "complete", null);
+__decorate([
+    (0, common_1.Post)(':id/reopen'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "reopen", null);
+__decorate([
+    (0, common_1.Post)(':id/rate'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Param)('id', common_1.ParseIntPipe)),
+    __param(2, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Number, rate_task_dto_1.RateTaskDto]),
+    __metadata("design:returntype", void 0)
+], TasksController.prototype, "rate", null);
 __decorate([
     (0, common_1.Get)('project/:id'),
     __param(0, (0, common_1.Req)()),

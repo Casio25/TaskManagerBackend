@@ -109,6 +109,31 @@ let ProjectsService = class ProjectsService {
         });
         return this.loadProjectWithTasks(projectRecord.id);
     }
+    async archivedProjects(userId) {
+        const projects = await this.prisma.project.findMany({
+            where: {
+                status: client_1.ProjectStatus.COMPLETED,
+                OR: [
+                    { creatorId: userId },
+                    { members: { some: { userId } } },
+                ],
+            },
+            include: {
+                completedBy: { select: { id: true, name: true, email: true } },
+                tasks: {
+                    orderBy: { deadline: 'asc' },
+                    include: {
+                        tags: { include: { tag: true } },
+                        assignedTo: { select: { id: true, name: true, email: true } },
+                        submittedBy: { select: { id: true, name: true, email: true } },
+                        completedBy: { select: { id: true, name: true, email: true } },
+                    },
+                },
+            },
+            orderBy: { completedAt: 'desc' },
+        });
+        return projects.map((project) => this.mapProject(project));
+    }
     async loadProjectWithTasks(projectId) {
         const project = await this.prisma.project.findUnique({
             where: { id: projectId },
@@ -273,6 +298,45 @@ let ProjectsService = class ProjectsService {
             data,
         });
         return this.loadProjectWithTasks(projectId);
+    }
+    async rateProject(adminId, projectId, dto) {
+        const project = await this.ensureProjectAdmin(projectId, adminId);
+        if (project.status !== client_1.ProjectStatus.COMPLETED) {
+            throw new common_1.BadRequestException('Project must be completed before rating');
+        }
+        const membership = await this.prisma.projectMember.findUnique({
+            where: { projectId_userId: { projectId, userId: dto.userId } },
+        });
+        if (!membership) {
+            throw new common_1.BadRequestException('User is not a member of this project');
+        }
+        const rating = await this.prisma.rating.upsert({
+            where: {
+                projectId_userId_scope: {
+                    projectId,
+                    userId: dto.userId,
+                    scope: client_1.RatingScope.PROJECT,
+                },
+            },
+            update: {
+                punctuality: dto.punctuality,
+                teamwork: dto.teamwork,
+                quality: dto.quality,
+                comments: dto.comments ?? null,
+                ratedBy: { connect: { id: adminId } },
+            },
+            create: {
+                scope: client_1.RatingScope.PROJECT,
+                punctuality: dto.punctuality,
+                teamwork: dto.teamwork,
+                quality: dto.quality,
+                comments: dto.comments ?? null,
+                project: { connect: { id: projectId } },
+                user: { connect: { id: dto.userId } },
+                ratedBy: { connect: { id: adminId } },
+            },
+        });
+        return { rating };
     }
     async deleteProject(userId, projectId) {
         await this.ensureProjectAdmin(projectId, userId);

@@ -11,6 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ColleaguesService = void 0;
 const common_1 = require("@nestjs/common");
+const client_1 = require("@prisma/client");
 const prisma_service_1 = require("../prisma/prisma.service");
 const DEFAULT_LISTS = ['Favorites', 'Team 1', 'Team 2'];
 let ColleaguesService = class ColleaguesService {
@@ -332,28 +333,26 @@ let ColleaguesService = class ColleaguesService {
             },
             orderBy: { createdAt: 'asc' },
         });
-        const names = new Set(existing.map((list) => list.name));
-        const toCreate = DEFAULT_LISTS.filter((name) => !names.has(name));
-        if (toCreate.length) {
-            const created = await Promise.all(toCreate.map((name) => this.prisma.colleagueList.create({
-                data: { ownerId, name },
-                include: {
-                    members: {
-                        include: {
-                            colleague: {
-                                include: {
-                                    contact: {
-                                        select: { id: true, email: true, name: true, role: true },
-                                    },
+        if (existing.length > 0) {
+            return existing;
+        }
+        const created = await Promise.all(DEFAULT_LISTS.map((name) => this.prisma.colleagueList.create({
+            data: { ownerId, name },
+            include: {
+                members: {
+                    include: {
+                        colleague: {
+                            include: {
+                                contact: {
+                                    select: { id: true, email: true, name: true, role: true },
                                 },
                             },
                         },
                     },
                 },
-            })));
-            return [...existing, ...created];
-        }
-        return existing;
+            },
+        })));
+        return created;
     }
     normalizeListIds(listIds) {
         if (!listIds || listIds.length === 0)
@@ -411,14 +410,17 @@ let ColleaguesService = class ColleaguesService {
         if (!colleague.contactId) {
             return { ...base, assignedProjects: [], assignedTasks: [] };
         }
-        const [assignedProjects, assignedTasks] = await Promise.all([
+        const accessibleProjectWhere = {
+            OR: [
+                { creatorId: ownerId },
+                { members: { some: { userId: ownerId, role: 'ADMIN' } } },
+            ],
+        };
+        const [assignedProjects, assignedTasks, completedProjects, completedTasksCount] = await Promise.all([
             this.prisma.project.findMany({
                 where: {
+                    ...accessibleProjectWhere,
                     members: { some: { userId: colleague.contactId } },
-                    OR: [
-                        { creatorId: ownerId },
-                        { members: { some: { userId: ownerId, role: 'ADMIN' } } },
-                    ],
                 },
                 select: { id: true, name: true },
             }),
@@ -434,8 +436,112 @@ let ColleaguesService = class ColleaguesService {
                 },
                 select: { id: true, title: true, projectId: true },
             }),
+            this.prisma.project.findMany({
+                where: {
+                    ...accessibleProjectWhere,
+                    status: client_1.ProjectStatus.COMPLETED,
+                    members: { some: { userId: colleague.contactId } },
+                },
+                select: {
+                    id: true,
+                    name: true,
+                    deadline: true,
+                    completedAt: true,
+                    color: true,
+                    ratings: {
+                        where: {
+                            scope: client_1.RatingScope.PROJECT,
+                            userId: colleague.contactId,
+                        },
+                        select: {
+                            id: true,
+                            punctuality: true,
+                            teamwork: true,
+                            quality: true,
+                            comments: true,
+                            createdAt: true,
+                            updatedAt: true,
+                            ratedBy: {
+                                select: { id: true, name: true, email: true },
+                            },
+                        },
+                        orderBy: { createdAt: 'desc' },
+                    },
+                },
+                orderBy: [{ completedAt: 'desc' }, { updatedAt: 'desc' }],
+            }),
+            this.prisma.task.count({
+                where: {
+                    status: client_1.TaskStatus.COMPLETED,
+                    assignedToId: colleague.contactId,
+                    project: {
+                        OR: [
+                            { creatorId: ownerId },
+                            { members: { some: { userId: ownerId, role: 'ADMIN' } } },
+                        ],
+                    },
+                },
+            }),
         ]);
-        return { ...base, assignedProjects, assignedTasks };
+        const pendingProjectRatings = completedProjects
+            .filter((project) => project.ratings.length === 0)
+            .map((project) => ({
+            projectId: project.id,
+            projectName: project.name,
+            deadline: project.deadline,
+            completedAt: project.completedAt,
+            color: project.color,
+        }));
+        const projectRatings = completedProjects
+            .map((project) => {
+            const rating = project.ratings[0];
+            if (!rating)
+                return null;
+            return {
+                projectId: project.id,
+                projectName: project.name,
+                deadline: project.deadline,
+                completedAt: project.completedAt,
+                color: project.color,
+                rating: {
+                    id: rating.id,
+                    punctuality: rating.punctuality,
+                    teamwork: rating.teamwork,
+                    quality: rating.quality,
+                    comments: rating.comments,
+                    createdAt: rating.createdAt,
+                    updatedAt: rating.updatedAt,
+                    ratedBy: rating.ratedBy
+                        ? {
+                            id: rating.ratedBy.id,
+                            name: rating.ratedBy.name,
+                            email: rating.ratedBy.email,
+                        }
+                        : null,
+                },
+            };
+        })
+            .filter((value) => value !== null);
+        const ratingValues = projectRatings.map((entry) => entry.rating);
+        const ratingCount = ratingValues.length;
+        const projectRatingAverages = ratingCount
+            ? {
+                count: ratingCount,
+                punctuality: ratingValues.reduce((total, rating) => total + rating.punctuality, 0) / ratingCount,
+                teamwork: ratingValues.reduce((total, rating) => total + rating.teamwork, 0) / ratingCount,
+                quality: ratingValues.reduce((total, rating) => total + rating.quality, 0) / ratingCount,
+            }
+            : null;
+        return {
+            ...base,
+            assignedProjects,
+            assignedTasks,
+            pendingProjectRatings,
+            projectRatings,
+            completedProjects: completedProjects.length,
+            completedTasks: completedTasksCount,
+            projectRatingAverages,
+        };
     }
 };
 exports.ColleaguesService = ColleaguesService;

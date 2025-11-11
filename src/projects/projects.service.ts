@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
+import { RateProjectDto } from './dto/rate-project.dto';
 import { Prisma, ProjectStatus, RatingScope } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
@@ -113,8 +114,35 @@ export class ProjectsService {
     return project;
   });
 
-  return this.loadProjectWithTasks(projectRecord.id);
-}
+    return this.loadProjectWithTasks(projectRecord.id);
+  }
+
+  async archivedProjects(userId: number) {
+    const projects = await this.prisma.project.findMany({
+      where: {
+        status: ProjectStatus.COMPLETED,
+        OR: [
+          { creatorId: userId },
+          { members: { some: { userId } } },
+        ],
+      },
+      include: {
+        completedBy: { select: { id: true, name: true, email: true } },
+        tasks: {
+          orderBy: { deadline: 'asc' },
+          include: {
+            tags: { include: { tag: true } },
+            assignedTo: { select: { id: true, name: true, email: true } },
+            submittedBy: { select: { id: true, name: true, email: true } },
+            completedBy: { select: { id: true, name: true, email: true } },
+          },
+        },
+      },
+      orderBy: { completedAt: 'desc' },
+    });
+
+    return projects.map((project) => this.mapProject(project));
+  }
 
   private async loadProjectWithTasks(projectId: number) {
     const project = await this.prisma.project.findUnique({
@@ -295,6 +323,49 @@ export class ProjectsService {
       data,
     });
     return this.loadProjectWithTasks(projectId);
+  }
+
+  async rateProject(adminId: number, projectId: number, dto: RateProjectDto) {
+    const project = await this.ensureProjectAdmin(projectId, adminId);
+    if (project.status !== ProjectStatus.COMPLETED) {
+      throw new BadRequestException('Project must be completed before rating');
+    }
+
+    const membership = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId, userId: dto.userId } },
+    });
+    if (!membership) {
+      throw new BadRequestException('User is not a member of this project');
+    }
+
+    const rating = await this.prisma.rating.upsert({
+      where: {
+        projectId_userId_scope: {
+          projectId,
+          userId: dto.userId,
+          scope: RatingScope.PROJECT,
+        },
+      },
+      update: {
+        punctuality: dto.punctuality,
+        teamwork: dto.teamwork,
+        quality: dto.quality,
+        comments: dto.comments ?? null,
+        ratedBy: { connect: { id: adminId } },
+      },
+      create: {
+        scope: RatingScope.PROJECT,
+        punctuality: dto.punctuality,
+        teamwork: dto.teamwork,
+        quality: dto.quality,
+        comments: dto.comments ?? null,
+        project: { connect: { id: projectId } },
+        user: { connect: { id: dto.userId } },
+        ratedBy: { connect: { id: adminId } },
+      },
+    });
+
+    return { rating };
   }
 
 

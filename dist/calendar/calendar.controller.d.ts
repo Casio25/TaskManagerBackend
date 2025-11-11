@@ -54,11 +54,11 @@ export declare class CalendarController {
             createdAt: Date;
             updatedAt: Date;
             userId: number;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            quality: number;
             punctuality: number;
             teamwork: number;
-            quality: number;
             comments: string | null;
-            scope: import(".prisma/client").$Enums.RatingScope;
             ratedById: number;
         }[];
         completedBy: {
@@ -206,11 +206,11 @@ export declare class CalendarController {
             createdAt: Date;
             updatedAt: Date;
             userId: number;
+            scope: import(".prisma/client").$Enums.RatingScope;
+            quality: number;
             punctuality: number;
             teamwork: number;
-            quality: number;
             comments: string | null;
-            scope: import(".prisma/client").$Enums.RatingScope;
             ratedById: number;
         }[];
         completedBy: {

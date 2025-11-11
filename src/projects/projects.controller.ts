@@ -5,6 +5,7 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
 import { AcceptProjectInviteDto } from './dto/accept-project-invite.dto';
 import { UpdateProjectStatusDto } from './dto/update-project-status.dto';
+import { RateProjectDto } from './dto/rate-project.dto';
 import { MailService } from '../mail/mail.service';
 
 @UseGuards(JwtAuthGuard)
@@ -44,6 +45,11 @@ export class ProjectsController {
     return this.projects.myProjects(req.user.id);
   }
 
+  @Get('archived')
+  async archived(@Req() req: any) {
+    return this.projects.archivedProjects(req.user.id);
+  }
+
   @Patch(':id/status')
   async updateStatus(
     @Req() req: any,
@@ -51,6 +57,15 @@ export class ProjectsController {
     @Body() dto: UpdateProjectStatusDto,
   ) {
     return this.projects.updateProjectStatus(req.user.id, id, dto.status);
+  }
+
+  @Post(':id/rate')
+  async rateProject(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RateProjectDto,
+  ) {
+    return this.projects.rateProject(req.user.id, id, dto);
   }
 
   @Delete(':id')

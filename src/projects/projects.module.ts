@@ -9,4 +9,3 @@ import { MailModule } from '../mail/mail.module';
   providers: [ProjectsService],
 })
 export class ProjectsModule {}
-

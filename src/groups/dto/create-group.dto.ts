@@ -4,4 +4,3 @@ export class CreateGroupDto {
   @IsString()
   name!: string;
 }
-

@@ -1,4 +1,8 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, ProjectRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -28,7 +32,10 @@ export class CalendarService {
     return { membership, isCreator };
   }
 
-  private isAdmin(membership: { userId: number; role: ProjectRole } | undefined, isCreator: boolean) {
+  private isAdmin(
+    membership: { userId: number; role: ProjectRole } | undefined,
+    isCreator: boolean,
+  ) {
     return isCreator || membership?.role === 'ADMIN';
   }
 
@@ -60,7 +67,9 @@ export class CalendarService {
   async projectCalendar(userId: number, projectId: number, range: DateRange) {
     const context = await this.ensureProjectMember(projectId, userId);
     if (!this.isAdmin(context.membership, context.isCreator)) {
-      throw new ForbiddenException('Only project admins can view project calendar');
+      throw new ForbiddenException(
+        'Only project admins can view project calendar',
+      );
     }
 
     const where: Prisma.TaskWhereInput = { projectId };
@@ -74,7 +83,9 @@ export class CalendarService {
     });
   }
 
-  private deadlineFilter(range: DateRange): Prisma.DateTimeNullableFilter | undefined {
+  private deadlineFilter(
+    range: DateRange,
+  ): Prisma.DateTimeNullableFilter | undefined {
     const filter: Prisma.DateTimeNullableFilter = {};
     if (range.from) filter.gte = range.from;
     if (range.to) filter.lte = range.to;

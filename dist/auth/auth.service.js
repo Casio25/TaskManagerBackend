@@ -32,7 +32,9 @@ let AuthService = class AuthService {
         return this.jwt.sign(payload);
     }
     async register(dto) {
-        const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const exists = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
         if (exists)
             throw new common_1.ConflictException('Email already in use');
         const password = await this.hashPassword(dto.password);
@@ -45,7 +47,9 @@ let AuthService = class AuthService {
         return { user: safe, access_token };
     }
     async login(dto) {
-        const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+        const user = await this.prisma.user.findUnique({
+            where: { email: dto.email },
+        });
         if (!user)
             throw new common_1.UnauthorizedException('User not found');
         const ok = await this.comparePassword(dto.password, user.password);
@@ -59,6 +63,7 @@ let AuthService = class AuthService {
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService, jwt_1.JwtService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        jwt_1.JwtService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

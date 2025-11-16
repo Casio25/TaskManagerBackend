@@ -4,4 +4,3 @@ export class AcceptProjectInviteDto {
   @IsString()
   token!: string; // format: <inviteId>.<secret>
 }
-

@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Patch,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -11,7 +22,10 @@ import { MailService } from '../mail/mail.service';
 @UseGuards(JwtAuthGuard)
 @Controller('projects')
 export class ProjectsController {
-  constructor(private projects: ProjectsService, private mail: MailService) {}
+  constructor(
+    private projects: ProjectsService,
+    private mail: MailService,
+  ) {}
 
   @Post()
   async create(@Req() req: any, @Body() dto: CreateProjectDto) {
@@ -24,7 +38,11 @@ export class ProjectsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreateProjectInviteDto,
   ) {
-    const { invite, token } = await this.projects.createInvite(id, req.user.id, dto);
+    const { invite, token } = await this.projects.createInvite(
+      id,
+      req.user.id,
+      dto,
+    );
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const link = `${appUrl}/projects/invitations/accept?token=${encodeURIComponent(token)}`;
     await this.mail.sendMail(

@@ -1,5 +1,9 @@
-
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, ProjectRole, RatingScope, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -23,19 +27,27 @@ export class TasksService {
     });
     if (!project) throw new NotFoundException('Project not found');
     const isCreator = project.creatorId === userId;
-    const membership = project.members.find((member) => member.userId === userId);
+    const membership = project.members.find(
+      (member) => member.userId === userId,
+    );
     if (!isCreator && !membership) {
       throw new ForbiddenException('Access denied to this project');
     }
     return { project, membership, isCreator };
   }
 
-  private isAdmin(membership: { userId: number; role: ProjectRole } | undefined, isCreator: boolean) {
+  private isAdmin(
+    membership: { userId: number; role: ProjectRole } | undefined,
+    isCreator: boolean,
+  ) {
     return isCreator || membership?.role === 'ADMIN';
   }
 
   async createTask(userId: number, dto: CreateTaskDto) {
-    const { project, membership, isCreator } = await this.ensureProjectMember(dto.projectId, userId);
+    const { project, membership, isCreator } = await this.ensureProjectMember(
+      dto.projectId,
+      userId,
+    );
     if (!this.isAdmin(membership, isCreator)) {
       throw new ForbiddenException('Only project admins can create tasks');
     }
@@ -43,19 +55,29 @@ export class TasksService {
     let assignedToConnect: Prisma.TaskCreateInput['assignedTo'] = undefined;
     if (dto.assignedToId) {
       const assignee = await this.prisma.projectMember.findUnique({
-        where: { projectId_userId: { projectId: dto.projectId, userId: dto.assignedToId } },
+        where: {
+          projectId_userId: {
+            projectId: dto.projectId,
+            userId: dto.assignedToId,
+          },
+        },
       });
       if (!assignee && dto.assignedToId !== project.creatorId) {
         throw new ForbiddenException('Assignee must be a project member');
       }
-      const userExists = await this.prisma.user.findUnique({ where: { id: dto.assignedToId } });
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: dto.assignedToId },
+      });
       if (!userExists) throw new NotFoundException('Assignee user not found');
       assignedToConnect = { connect: { id: dto.assignedToId } };
     }
 
-    let assignedGroupConnect: Prisma.TaskCreateInput['assignedGroup'] = undefined;
+    let assignedGroupConnect: Prisma.TaskCreateInput['assignedGroup'] =
+      undefined;
     if (dto.assignedGroupId) {
-      const group = await this.prisma.group.findUnique({ where: { id: dto.assignedGroupId } });
+      const group = await this.prisma.group.findUnique({
+        where: { id: dto.assignedGroupId },
+      });
       if (!group) throw new NotFoundException('Group not found');
       if (!project.groupId || project.groupId !== group.id) {
         throw new ForbiddenException('Task group must match project group');
@@ -65,16 +87,22 @@ export class TasksService {
 
     let parentTaskConnect: Prisma.TaskCreateInput['parentTask'] = undefined;
     if (dto.parentTaskId) {
-      const parentTask = await this.prisma.task.findUnique({ where: { id: dto.parentTaskId } });
+      const parentTask = await this.prisma.task.findUnique({
+        where: { id: dto.parentTaskId },
+      });
       if (!parentTask) throw new NotFoundException('Parent task not found');
       if (parentTask.projectId !== dto.projectId) {
-        throw new ForbiddenException('Parent task must belong to the same project');
+        throw new ForbiddenException(
+          'Parent task must belong to the same project',
+        );
       }
       parentTaskConnect = { connect: { id: parentTask.id } };
     }
 
     if (dto.themeId) {
-      const themeExists = await this.prisma.theme.findUnique({ where: { id: dto.themeId } });
+      const themeExists = await this.prisma.theme.findUnique({
+        where: { id: dto.themeId },
+      });
       if (!themeExists) throw new NotFoundException('Theme not found');
     }
 
@@ -113,11 +141,16 @@ export class TasksService {
   async updateTask(userId: number, taskId: number, dto: UpdateTaskDto) {
     const task = await this.prisma.task.findUnique({
       where: { id: taskId },
-      include: { project: { select: { id: true, creatorId: true, groupId: true } } },
+      include: {
+        project: { select: { id: true, creatorId: true, groupId: true } },
+      },
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    const { membership, isCreator } = await this.ensureProjectMember(
+      task.projectId,
+      userId,
+    );
     const isAdmin = this.isAdmin(membership, isCreator);
     if (!isAdmin && task.assignedToId !== userId) {
       throw new ForbiddenException('You cannot update this task');
@@ -131,7 +164,9 @@ export class TasksService {
       const now = new Date();
       if (dto.status === TaskStatus.SUBMITTED) {
         if (!isAdmin && task.assignedToId !== userId) {
-          throw new ForbiddenException('Only the assignee can submit this task');
+          throw new ForbiddenException(
+            'Only the assignee can submit this task',
+          );
         }
         data.status = TaskStatus.SUBMITTED;
         data.submittedAt = now;
@@ -142,7 +177,9 @@ export class TasksService {
         }
       } else if (dto.status === TaskStatus.COMPLETED) {
         if (!isAdmin) {
-          throw new ForbiddenException('Only project admins can complete tasks');
+          throw new ForbiddenException(
+            'Only project admins can complete tasks',
+          );
         }
         data.status = TaskStatus.COMPLETED;
         data.completedAt = now;
@@ -153,7 +190,9 @@ export class TasksService {
         }
       } else {
         if (!isAdmin) {
-          throw new ForbiddenException('Only project admins can change this status');
+          throw new ForbiddenException(
+            'Only project admins can change this status',
+          );
         }
         data.status = dto.status;
         data.completedAt = null;
@@ -171,29 +210,38 @@ export class TasksService {
       data.deadline = dto.deadline ? new Date(dto.deadline) : null;
     }
     if (dto.assignedToId !== undefined) {
-      if (!isAdmin) throw new ForbiddenException('Only admins can reassign tasks');
+      if (!isAdmin)
+        throw new ForbiddenException('Only admins can reassign tasks');
       if (dto.assignedToId === null) {
         data.assignedTo = { disconnect: true };
       } else {
         const assignee = await this.prisma.projectMember.findUnique({
           where: {
-            projectId_userId: { projectId: task.projectId, userId: dto.assignedToId },
+            projectId_userId: {
+              projectId: task.projectId,
+              userId: dto.assignedToId,
+            },
           },
         });
         if (!assignee && dto.assignedToId !== task.project.creatorId) {
           throw new ForbiddenException('Assignee must be project member');
         }
-        const userExists = await this.prisma.user.findUnique({ where: { id: dto.assignedToId } });
+        const userExists = await this.prisma.user.findUnique({
+          where: { id: dto.assignedToId },
+        });
         if (!userExists) throw new NotFoundException('Assignee not found');
         data.assignedTo = { connect: { id: dto.assignedToId } };
       }
     }
     if (dto.assignedGroupId !== undefined) {
-      if (!isAdmin) throw new ForbiddenException('Only admins can update task group');
+      if (!isAdmin)
+        throw new ForbiddenException('Only admins can update task group');
       if (dto.assignedGroupId === null) {
         data.assignedGroup = { disconnect: true };
       } else {
-        const group = await this.prisma.group.findUnique({ where: { id: dto.assignedGroupId } });
+        const group = await this.prisma.group.findUnique({
+          where: { id: dto.assignedGroupId },
+        });
         if (!group) throw new NotFoundException('Group not found');
         if (!task.project.groupId || task.project.groupId !== group.id) {
           throw new ForbiddenException('Task group must match project group');
@@ -205,7 +253,9 @@ export class TasksService {
       if (dto.themeId === null) {
         data.theme = { disconnect: true };
       } else {
-        const theme = await this.prisma.theme.findUnique({ where: { id: dto.themeId } });
+        const theme = await this.prisma.theme.findUnique({
+          where: { id: dto.themeId },
+        });
         if (!theme) throw new NotFoundException('Theme not found');
         data.theme = { connect: { id: dto.themeId } };
       }
@@ -265,7 +315,10 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    const { membership, isCreator } = await this.ensureProjectMember(
+      task.projectId,
+      userId,
+    );
     const isAdmin = this.isAdmin(membership, isCreator);
     const now = new Date();
 
@@ -273,8 +326,14 @@ export class TasksService {
       if (task.assignedToId !== userId) {
         throw new ForbiddenException('Only the assignee can submit this task');
       }
-      if (task.status === TaskStatus.SUBMITTED && task.submittedById === userId) {
-        return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+      if (
+        task.status === TaskStatus.SUBMITTED &&
+        task.submittedById === userId
+      ) {
+        return this.prisma.task.findUnique({
+          where: { id: taskId },
+          include: this.taskInclude(),
+        });
       }
       return this.prisma.task.update({
         where: { id: taskId },
@@ -290,7 +349,10 @@ export class TasksService {
     }
 
     if (task.status === TaskStatus.COMPLETED && task.completedById) {
-      return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+      return this.prisma.task.findUnique({
+        where: { id: taskId },
+        include: this.taskInclude(),
+      });
     }
 
     const data: Prisma.TaskUpdateInput = {
@@ -323,13 +385,22 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    const { membership, isCreator } = await this.ensureProjectMember(
+      task.projectId,
+      userId,
+    );
     if (!this.isAdmin(membership, isCreator)) {
       throw new ForbiddenException('Only project admins can reopen tasks');
     }
 
-    if (task.status !== TaskStatus.SUBMITTED && task.status !== TaskStatus.COMPLETED) {
-      return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+    if (
+      task.status !== TaskStatus.SUBMITTED &&
+      task.status !== TaskStatus.COMPLETED
+    ) {
+      return this.prisma.task.findUnique({
+        where: { id: taskId },
+        include: this.taskInclude(),
+      });
     }
 
     return this.prisma.task.update({
@@ -356,7 +427,10 @@ export class TasksService {
     });
     if (!task) throw new NotFoundException('Task not found');
 
-    const { membership, isCreator } = await this.ensureProjectMember(task.projectId, userId);
+    const { membership, isCreator } = await this.ensureProjectMember(
+      task.projectId,
+      userId,
+    );
     if (!this.isAdmin(membership, isCreator)) {
       throw new ForbiddenException('Only project admins can rate tasks');
     }
@@ -416,8 +490,7 @@ export class TasksService {
       return { tagId: link.tagId, tagName: link.tag.name, summary };
     });
     return { rating: result.rating, performances };
-
- }
+  }
 
   private async recalculateTagPerformance(
     tx: Prisma.TransactionClient,
@@ -457,7 +530,13 @@ export class TasksService {
         },
       },
       orderBy: { updatedAt: 'desc' },
-      select: { punctuality: true, teamwork: true, quality: true, updatedAt: true, taskId: true },
+      select: {
+        punctuality: true,
+        teamwork: true,
+        quality: true,
+        updatedAt: true,
+        taskId: true,
+      },
     });
 
     const summary = {
@@ -497,4 +576,3 @@ export class TasksService {
     };
   }
 }
-

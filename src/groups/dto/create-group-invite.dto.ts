@@ -10,4 +10,3 @@ export class CreateGroupInviteDto {
   @Max(60)
   expiresInDays?: number; // default 7
 }
-

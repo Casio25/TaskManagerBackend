@@ -42,8 +42,13 @@ let GroupsController = class GroupsController {
     }
     async myGroups(req) {
         const userId = req.user.id;
-        const admin = await this.groups['prisma'].group.findMany({ where: { adminId: userId } });
-        const memberLinks = await this.groups['prisma'].userGroup.findMany({ where: { userId }, include: { group: true } });
+        const admin = await this.groups['prisma'].group.findMany({
+            where: { adminId: userId },
+        });
+        const memberLinks = await this.groups['prisma'].userGroup.findMany({
+            where: { userId },
+            include: { group: true },
+        });
         const member = memberLinks.map((l) => l.group);
         return { admin, member };
     }
@@ -84,6 +89,7 @@ __decorate([
 exports.GroupsController = GroupsController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('groups'),
-    __metadata("design:paramtypes", [groups_service_1.GroupsService, mail_service_1.MailService])
+    __metadata("design:paramtypes", [groups_service_1.GroupsService,
+        mail_service_1.MailService])
 ], GroupsController);
 //# sourceMappingURL=groups.controller.js.map

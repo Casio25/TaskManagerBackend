@@ -49,19 +49,28 @@ let TasksService = class TasksService {
         let assignedToConnect = undefined;
         if (dto.assignedToId) {
             const assignee = await this.prisma.projectMember.findUnique({
-                where: { projectId_userId: { projectId: dto.projectId, userId: dto.assignedToId } },
+                where: {
+                    projectId_userId: {
+                        projectId: dto.projectId,
+                        userId: dto.assignedToId,
+                    },
+                },
             });
             if (!assignee && dto.assignedToId !== project.creatorId) {
                 throw new common_1.ForbiddenException('Assignee must be a project member');
             }
-            const userExists = await this.prisma.user.findUnique({ where: { id: dto.assignedToId } });
+            const userExists = await this.prisma.user.findUnique({
+                where: { id: dto.assignedToId },
+            });
             if (!userExists)
                 throw new common_1.NotFoundException('Assignee user not found');
             assignedToConnect = { connect: { id: dto.assignedToId } };
         }
         let assignedGroupConnect = undefined;
         if (dto.assignedGroupId) {
-            const group = await this.prisma.group.findUnique({ where: { id: dto.assignedGroupId } });
+            const group = await this.prisma.group.findUnique({
+                where: { id: dto.assignedGroupId },
+            });
             if (!group)
                 throw new common_1.NotFoundException('Group not found');
             if (!project.groupId || project.groupId !== group.id) {
@@ -71,7 +80,9 @@ let TasksService = class TasksService {
         }
         let parentTaskConnect = undefined;
         if (dto.parentTaskId) {
-            const parentTask = await this.prisma.task.findUnique({ where: { id: dto.parentTaskId } });
+            const parentTask = await this.prisma.task.findUnique({
+                where: { id: dto.parentTaskId },
+            });
             if (!parentTask)
                 throw new common_1.NotFoundException('Parent task not found');
             if (parentTask.projectId !== dto.projectId) {
@@ -80,7 +91,9 @@ let TasksService = class TasksService {
             parentTaskConnect = { connect: { id: parentTask.id } };
         }
         if (dto.themeId) {
-            const themeExists = await this.prisma.theme.findUnique({ where: { id: dto.themeId } });
+            const themeExists = await this.prisma.theme.findUnique({
+                where: { id: dto.themeId },
+            });
             if (!themeExists)
                 throw new common_1.NotFoundException('Theme not found');
         }
@@ -114,7 +127,9 @@ let TasksService = class TasksService {
     async updateTask(userId, taskId, dto) {
         const task = await this.prisma.task.findUnique({
             where: { id: taskId },
-            include: { project: { select: { id: true, creatorId: true, groupId: true } } },
+            include: {
+                project: { select: { id: true, creatorId: true, groupId: true } },
+            },
         });
         if (!task)
             throw new common_1.NotFoundException('Task not found');
@@ -181,13 +196,18 @@ let TasksService = class TasksService {
             else {
                 const assignee = await this.prisma.projectMember.findUnique({
                     where: {
-                        projectId_userId: { projectId: task.projectId, userId: dto.assignedToId },
+                        projectId_userId: {
+                            projectId: task.projectId,
+                            userId: dto.assignedToId,
+                        },
                     },
                 });
                 if (!assignee && dto.assignedToId !== task.project.creatorId) {
                     throw new common_1.ForbiddenException('Assignee must be project member');
                 }
-                const userExists = await this.prisma.user.findUnique({ where: { id: dto.assignedToId } });
+                const userExists = await this.prisma.user.findUnique({
+                    where: { id: dto.assignedToId },
+                });
                 if (!userExists)
                     throw new common_1.NotFoundException('Assignee not found');
                 data.assignedTo = { connect: { id: dto.assignedToId } };
@@ -200,7 +220,9 @@ let TasksService = class TasksService {
                 data.assignedGroup = { disconnect: true };
             }
             else {
-                const group = await this.prisma.group.findUnique({ where: { id: dto.assignedGroupId } });
+                const group = await this.prisma.group.findUnique({
+                    where: { id: dto.assignedGroupId },
+                });
                 if (!group)
                     throw new common_1.NotFoundException('Group not found');
                 if (!task.project.groupId || task.project.groupId !== group.id) {
@@ -214,7 +236,9 @@ let TasksService = class TasksService {
                 data.theme = { disconnect: true };
             }
             else {
-                const theme = await this.prisma.theme.findUnique({ where: { id: dto.themeId } });
+                const theme = await this.prisma.theme.findUnique({
+                    where: { id: dto.themeId },
+                });
                 if (!theme)
                     throw new common_1.NotFoundException('Theme not found');
                 data.theme = { connect: { id: dto.themeId } };
@@ -278,8 +302,12 @@ let TasksService = class TasksService {
             if (task.assignedToId !== userId) {
                 throw new common_1.ForbiddenException('Only the assignee can submit this task');
             }
-            if (task.status === client_1.TaskStatus.SUBMITTED && task.submittedById === userId) {
-                return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+            if (task.status === client_1.TaskStatus.SUBMITTED &&
+                task.submittedById === userId) {
+                return this.prisma.task.findUnique({
+                    where: { id: taskId },
+                    include: this.taskInclude(),
+                });
             }
             return this.prisma.task.update({
                 where: { id: taskId },
@@ -294,7 +322,10 @@ let TasksService = class TasksService {
             });
         }
         if (task.status === client_1.TaskStatus.COMPLETED && task.completedById) {
-            return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+            return this.prisma.task.findUnique({
+                where: { id: taskId },
+                include: this.taskInclude(),
+            });
         }
         const data = {
             status: client_1.TaskStatus.COMPLETED,
@@ -328,8 +359,12 @@ let TasksService = class TasksService {
         if (!this.isAdmin(membership, isCreator)) {
             throw new common_1.ForbiddenException('Only project admins can reopen tasks');
         }
-        if (task.status !== client_1.TaskStatus.SUBMITTED && task.status !== client_1.TaskStatus.COMPLETED) {
-            return this.prisma.task.findUnique({ where: { id: taskId }, include: this.taskInclude() });
+        if (task.status !== client_1.TaskStatus.SUBMITTED &&
+            task.status !== client_1.TaskStatus.COMPLETED) {
+            return this.prisma.task.findUnique({
+                where: { id: taskId },
+                include: this.taskInclude(),
+            });
         }
         return this.prisma.task.update({
             where: { id: taskId },
@@ -440,7 +475,13 @@ let TasksService = class TasksService {
                 },
             },
             orderBy: { updatedAt: 'desc' },
-            select: { punctuality: true, teamwork: true, quality: true, updatedAt: true, taskId: true },
+            select: {
+                punctuality: true,
+                teamwork: true,
+                quality: true,
+                updatedAt: true,
+                taskId: true,
+            },
         });
         const summary = {
             averagePunctuality: aggregates._avg.punctuality ?? 0,

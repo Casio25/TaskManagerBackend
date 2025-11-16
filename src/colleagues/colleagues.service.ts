@@ -1,4 +1,9 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, ProjectStatus, RatingScope, TaskStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateColleagueDto } from './dto/create-colleague.dto';
@@ -39,7 +44,11 @@ export class ColleaguesService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return Promise.all(colleagues.map((colleague) => this.buildColleagueResponse(ownerId, colleague)));
+    return Promise.all(
+      colleagues.map((colleague) =>
+        this.buildColleagueResponse(ownerId, colleague),
+      ),
+    );
   }
 
   async create(ownerId: number, dto: CreateColleagueDto) {
@@ -79,7 +88,12 @@ export class ColleaguesService {
         await this.prisma.$transaction(
           ownerLists.map((list) =>
             this.prisma.colleagueListMember.upsert({
-              where: { listId_colleagueId: { listId: list.id, colleagueId: colleague.id } },
+              where: {
+                listId_colleagueId: {
+                  listId: list.id,
+                  colleagueId: colleague.id,
+                },
+              },
               update: {},
               create: { listId: list.id, colleagueId: colleague.id },
             }),
@@ -94,8 +108,6 @@ export class ColleaguesService {
     }
 
     return this.buildColleagueResponse(ownerId, colleague);
-
-
   }
 
   async listLists(ownerId: number) {
@@ -152,7 +164,7 @@ export class ColleaguesService {
     });
     if (!list) throw new NotFoundException('List not found');
 
-    let colleague = await this.ensureColleague(ownerId, dto.colleagueId);
+    const colleague = await this.ensureColleague(ownerId, dto.colleagueId);
 
     await this.prisma.colleagueListMember.upsert({
       where: { listId_colleagueId: { listId, colleagueId: colleague.id } },
@@ -185,7 +197,10 @@ export class ColleaguesService {
 
     return {
       list: this.mapList(updatedList!),
-      colleague: await this.buildColleagueResponse(ownerId, refreshedColleague!),
+      colleague: await this.buildColleagueResponse(
+        ownerId,
+        refreshedColleague!,
+      ),
     };
   }
 
@@ -193,9 +208,9 @@ export class ColleaguesService {
     const list = await this.prisma.colleagueList.findFirst({
       where: { id: listId, ownerId },
     });
-    if ( !list) throw new NotFoundException( 'List not found');
+    if (!list) throw new NotFoundException('List not found');
 
-    await this.prisma. $transaction(async (tx) => { 
+    await this.prisma.$transaction(async (tx) => {
       await tx.colleagueListMember.deleteMany({ where: { listId } });
       await tx.colleagueList.delete({ where: { id: listId } });
     });
@@ -204,7 +219,6 @@ export class ColleaguesService {
 
     return { deletedId: listId };
   }
-
 
   async removeFromList(ownerId: number, listId: number, colleagueId: number) {
     const list = await this.prisma.colleagueList.findFirst({
@@ -250,12 +264,19 @@ export class ColleaguesService {
 
     return {
       list: this.mapList(updatedList!),
-      colleague: await this.buildColleagueResponse(ownerId, refreshedColleague!),
+      colleague: await this.buildColleagueResponse(
+        ownerId,
+        refreshedColleague!,
+      ),
     };
   }
 
-  async assignProject(ownerId: number, colleagueId: number, dto: AssignProjectDto) {
-    let colleague = await this.ensureColleague(ownerId, colleagueId);
+  async assignProject(
+    ownerId: number,
+    colleagueId: number,
+    dto: AssignProjectDto,
+  ) {
+    const colleague = await this.ensureColleague(ownerId, colleagueId);
     if (!colleague.contactId) {
       throw new BadRequestException('Colleague has not registered yet');
     }
@@ -270,14 +291,25 @@ export class ColleaguesService {
 
     const isAdmin =
       project.creatorId === ownerId ||
-      project.members.some((member) => member.userId === ownerId && member.role === 'ADMIN');
+      project.members.some(
+        (member) => member.userId === ownerId && member.role === 'ADMIN',
+      );
     if (!isAdmin) {
       throw new ForbiddenException('Only project admins can assign members');
     }
 
     await this.prisma.projectMember.upsert({
-      where: { projectId_userId: { projectId: project.id, userId: colleague.contactId } },
-      create: { projectId: project.id, userId: colleague.contactId, role: 'MEMBER' },
+      where: {
+        projectId_userId: {
+          projectId: project.id,
+          userId: colleague.contactId,
+        },
+      },
+      create: {
+        projectId: project.id,
+        userId: colleague.contactId,
+        role: 'MEMBER',
+      },
       update: {},
     });
 
@@ -290,7 +322,7 @@ export class ColleaguesService {
   }
 
   async assignTask(ownerId: number, colleagueId: number, dto: AssignTaskDto) {
-    let colleague = await this.ensureColleague(ownerId, colleagueId);
+    const colleague = await this.ensureColleague(ownerId, colleagueId);
     if (!colleague.contactId) {
       throw new BadRequestException('Colleague has not registered yet');
     }
@@ -310,14 +342,25 @@ export class ColleaguesService {
     const project = task.project;
     const isAdmin =
       project.creatorId === ownerId ||
-      project.members.some((member) => member.userId === ownerId && member.role === 'ADMIN');
+      project.members.some(
+        (member) => member.userId === ownerId && member.role === 'ADMIN',
+      );
     if (!isAdmin) {
       throw new ForbiddenException('Only project admins can assign tasks');
     }
 
     await this.prisma.projectMember.upsert({
-      where: { projectId_userId: { projectId: project.id, userId: colleague.contactId } },
-      create: { projectId: project.id, userId: colleague.contactId, role: 'MEMBER' },
+      where: {
+        projectId_userId: {
+          projectId: project.id,
+          userId: colleague.contactId,
+        },
+      },
+      create: {
+        projectId: project.id,
+        userId: colleague.contactId,
+        role: 'MEMBER',
+      },
       update: {},
     });
 
@@ -346,7 +389,7 @@ export class ColleaguesService {
   }
 
   private async ensureColleague(ownerId: number, colleagueId: number) {
-    let colleague = await this.prisma.colleague.findFirst({
+    const colleague = await this.prisma.colleague.findFirst({
       where: { id: colleagueId, ownerId },
       include: this.colleagueInclude,
     });
@@ -467,7 +510,12 @@ export class ColleaguesService {
       ],
     };
 
-    const [assignedProjects, assignedTasks, completedProjects, completedTasksCount] = await Promise.all([
+    const [
+      assignedProjects,
+      assignedTasks,
+      completedProjects,
+      completedTasksCount,
+    ] = await Promise.all([
       this.prisma.project.findMany({
         where: {
           ...accessibleProjectWhere,
@@ -581,11 +629,16 @@ export class ColleaguesService {
       ? {
           count: ratingCount,
           punctuality:
-            ratingValues.reduce((total, rating) => total + rating.punctuality, 0) / ratingCount,
+            ratingValues.reduce(
+              (total, rating) => total + rating.punctuality,
+              0,
+            ) / ratingCount,
           teamwork:
-            ratingValues.reduce((total, rating) => total + rating.teamwork, 0) / ratingCount,
+            ratingValues.reduce((total, rating) => total + rating.teamwork, 0) /
+            ratingCount,
           quality:
-            ratingValues.reduce((total, rating) => total + rating.quality, 0) / ratingCount,
+            ratingValues.reduce((total, rating) => total + rating.quality, 0) /
+            ratingCount,
         }
       : null;
 
@@ -601,7 +654,3 @@ export class ColleaguesService {
     };
   }
 }
-
-
-
-

@@ -7,4 +7,3 @@ import { CalendarService } from './calendar.service';
   providers: [CalendarService],
 })
 export class CalendarModule {}
-

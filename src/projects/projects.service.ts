@@ -1,4 +1,9 @@
-﻿import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+﻿import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { CreateProjectInviteDto } from './dto/create-project-invite.dto';
@@ -24,95 +29,112 @@ export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   async createProject(userId: number, dto: CreateProjectDto) {
-  const { tasks, deadline, groupId: requestedGroupId, name, description, color: colorInput } = dto;
-  const trimmedName = name.trim();
-  if (!trimmedName) {
-    throw new BadRequestException('Project name is required');
-  }
-  const trimmedDescription = description?.trim() || undefined;
-  const color = (colorInput?.trim() || '#2563EB').toUpperCase();
-
-  let groupId: number | undefined;
-  if (requestedGroupId !== undefined) {
-    const group = await this.prisma.group.findUnique({ where: { id: requestedGroupId } });
-    if (!group) throw new NotFoundException('Group not found');
-    if (group.adminId !== userId) {
-      throw new ForbiddenException('Only group admin can create a project in this group');
+    const {
+      tasks,
+      deadline,
+      groupId: requestedGroupId,
+      name,
+      description,
+      color: colorInput,
+    } = dto;
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      throw new BadRequestException('Project name is required');
     }
-    groupId = requestedGroupId;
-  }
+    const trimmedDescription = description?.trim() || undefined;
+    const color = (colorInput?.trim() || '#2563EB').toUpperCase();
 
-  const projectDeadline = new Date(deadline);
-  if (Number.isNaN(projectDeadline.getTime())) {
-    throw new BadRequestException('Invalid deadline');
-  }
-
-  const projectRecord = await this.prisma.$transaction(async (tx) => {
-    const project = await tx.project.create({
-      data: {
-        name: trimmedName,
-        description: trimmedDescription,
-        creatorId: userId,
-        groupId,
-        deadline: projectDeadline,
-        color,
-        members: {
-          create: {
-            userId,
-            role: 'ADMIN',
-          },
-        },
-      },
-    });
-
-    for (const taskDto of tasks) {
-      const taskDeadline = new Date(taskDto.deadline);
-      if (Number.isNaN(taskDeadline.getTime())) {
-        throw new BadRequestException(`Invalid task deadline for "${taskDto.title}"`);
-      }
-      if (taskDeadline.getTime() > projectDeadline.getTime()) {
-        throw new BadRequestException(
-          `Task deadline cannot be later than project deadline for "${taskDto.title}"`,
+    let groupId: number | undefined;
+    if (requestedGroupId !== undefined) {
+      const group = await this.prisma.group.findUnique({
+        where: { id: requestedGroupId },
+      });
+      if (!group) throw new NotFoundException('Group not found');
+      if (group.adminId !== userId) {
+        throw new ForbiddenException(
+          'Only group admin can create a project in this group',
         );
       }
+      groupId = requestedGroupId;
+    }
 
-      const trimmedTitle = taskDto.title.trim();
-      if (!trimmedTitle) {
-        throw new BadRequestException('Task title is required');
-      }
-      const normalizedDescription = taskDto.description?.trim() || undefined;
+    const projectDeadline = new Date(deadline);
+    if (Number.isNaN(projectDeadline.getTime())) {
+      throw new BadRequestException('Invalid deadline');
+    }
 
-      const task = await tx.task.create({
+    const projectRecord = await this.prisma.$transaction(async (tx) => {
+      const project = await tx.project.create({
         data: {
-          title: trimmedTitle,
-          description: normalizedDescription,
-          projectId: project.id,
-          deadline: taskDeadline,
+          name: trimmedName,
+          description: trimmedDescription,
+          creatorId: userId,
+          groupId,
+          deadline: projectDeadline,
+          color,
+          members: {
+            create: {
+              userId,
+              role: 'ADMIN',
+            },
+          },
         },
       });
 
-      const uniqueTags = Array.from(
-        new Set(taskDto.tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)),
-      );
+      for (const taskDto of tasks) {
+        const taskDeadline = new Date(taskDto.deadline);
+        if (Number.isNaN(taskDeadline.getTime())) {
+          throw new BadRequestException(
+            `Invalid task deadline for "${taskDto.title}"`,
+          );
+        }
+        if (taskDeadline.getTime() > projectDeadline.getTime()) {
+          throw new BadRequestException(
+            `Task deadline cannot be later than project deadline for "${taskDto.title}"`,
+          );
+        }
 
-      for (const tagName of uniqueTags) {
-        const tag = await tx.tag.upsert({
-          where: { name: tagName },
-          update: {},
-          create: { name: tagName },
-        });
+        const trimmedTitle = taskDto.title.trim();
+        if (!trimmedTitle) {
+          throw new BadRequestException('Task title is required');
+        }
+        const normalizedDescription = taskDto.description?.trim() || undefined;
 
-        await tx.taskTag.create({
+        const task = await tx.task.create({
           data: {
-            taskId: task.id,
-            tagId: tag.id,
+            title: trimmedTitle,
+            description: normalizedDescription,
+            projectId: project.id,
+            deadline: taskDeadline,
           },
         });
-      }
-    }
 
-    return project;
-  });
+        const uniqueTags = Array.from(
+          new Set(
+            taskDto.tags
+              .map((tag) => tag.trim())
+              .filter((tag) => tag.length > 0),
+          ),
+        );
+
+        for (const tagName of uniqueTags) {
+          const tag = await tx.tag.upsert({
+            where: { name: tagName },
+            update: {},
+            create: { name: tagName },
+          });
+
+          await tx.taskTag.create({
+            data: {
+              taskId: task.id,
+              tagId: tag.id,
+            },
+          });
+        }
+      }
+
+      return project;
+    });
 
     return this.loadProjectWithTasks(projectRecord.id);
   }
@@ -121,10 +143,7 @@ export class ProjectsService {
     const projects = await this.prisma.project.findMany({
       where: {
         status: ProjectStatus.COMPLETED,
-        OR: [
-          { creatorId: userId },
-          { members: { some: { userId } } },
-        ],
+        OR: [{ creatorId: userId }, { members: { some: { userId } } }],
       },
       include: {
         completedBy: { select: { id: true, name: true, email: true } },
@@ -180,7 +199,11 @@ export class ProjectsService {
       status: project.status,
       completedAt: project.completedAt,
       completedBy: project.completedBy
-        ? { id: project.completedBy.id, name: project.completedBy.name, email: project.completedBy.email }
+        ? {
+            id: project.completedBy.id,
+            name: project.completedBy.name,
+            email: project.completedBy.email,
+          }
         : null,
       tasks: (project.tasks ?? []).map((task: any) => ({
         id: task.id,
@@ -191,23 +214,35 @@ export class ProjectsService {
         submittedAt: task.submittedAt,
         completedAt: task.completedAt,
         submittedBy: task.submittedBy
-          ? { id: task.submittedBy.id, name: task.submittedBy.name, email: task.submittedBy.email }
+          ? {
+              id: task.submittedBy.id,
+              name: task.submittedBy.name,
+              email: task.submittedBy.email,
+            }
           : null,
         completedBy: task.completedBy
-          ? { id: task.completedBy.id, name: task.completedBy.name, email: task.completedBy.email }
+          ? {
+              id: task.completedBy.id,
+              name: task.completedBy.name,
+              email: task.completedBy.email,
+            }
           : null,
         tags: (task.tags ?? []).map((tag: any) => tag.tag.name),
         assignedTo: task.assignedTo
-          ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+          ? {
+              id: task.assignedTo.id,
+              name: task.assignedTo.name,
+              email: task.assignedTo.email,
+            }
           : null,
       })),
     };
   }
 
-
-
   async ensureProjectAdmin(projectId: number, userId: number) {
-    const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+    });
     if (!project) throw new NotFoundException('Project not found');
     if (project.creatorId === userId) return project;
     const membership = await this.prisma.projectMember.findUnique({
@@ -220,10 +255,16 @@ export class ProjectsService {
     return project;
   }
 
-  async createInvite(projectId: number, invitedById: number, dto: CreateProjectInviteDto) {
+  async createInvite(
+    projectId: number,
+    invitedById: number,
+    dto: CreateProjectInviteDto,
+  ) {
     await this.ensureProjectAdmin(projectId, invitedById);
     const expiresInDays = dto.expiresInDays ?? 7;
-    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + expiresInDays * 24 * 60 * 60 * 1000,
+    );
     const secret = crypto.randomBytes(24).toString('hex');
     const tokenHash = await bcrypt.hash(secret, 10);
     const invite = await this.prisma.projectInvitation.create({
@@ -239,11 +280,18 @@ export class ProjectsService {
     return { invite, token };
   }
 
-  async acceptInvite(userId: number, userEmail: string, dto: AcceptProjectInviteDto) {
+  async acceptInvite(
+    userId: number,
+    userEmail: string,
+    dto: AcceptProjectInviteDto,
+  ) {
     const { id, secret } = parseToken(dto.token);
-    const invite = await this.prisma.projectInvitation.findUnique({ where: { id } });
+    const invite = await this.prisma.projectInvitation.findUnique({
+      where: { id },
+    });
     if (!invite) throw new NotFoundException('Invite not found');
-    if (invite.status !== 'PENDING') throw new ForbiddenException('Invite is not active');
+    if (invite.status !== 'PENDING')
+      throw new ForbiddenException('Invite is not active');
     if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
       throw new ForbiddenException('Invite expired');
     }
@@ -263,48 +311,54 @@ export class ProjectsService {
     // mark accepted
     const updated = await this.prisma.projectInvitation.update({
       where: { id: invite.id },
-      data: { status: 'ACCEPTED', acceptedById: userId, acceptedAt: new Date() },
+      data: {
+        status: 'ACCEPTED',
+        acceptedById: userId,
+        acceptedAt: new Date(),
+      },
     });
 
     return { invitation: updated };
   }
 
   async myProjects(userId: number) {
-  const memberships = await this.prisma.projectMember.findMany({
-    where: { userId },
-    include: {
-      project: {
-        include: {
-          completedBy: { select: { id: true, name: true, email: true } },
-          tasks: {
-            orderBy: { deadline: 'asc' },
-            include: {
-              tags: { include: { tag: true } },
-              assignedTo: { select: { id: true, name: true, email: true } },
-              submittedBy: { select: { id: true, name: true, email: true } },
-              completedBy: { select: { id: true, name: true, email: true } },
+    const memberships = await this.prisma.projectMember.findMany({
+      where: { userId },
+      include: {
+        project: {
+          include: {
+            completedBy: { select: { id: true, name: true, email: true } },
+            tasks: {
+              orderBy: { deadline: 'asc' },
+              include: {
+                tags: { include: { tag: true } },
+                assignedTo: { select: { id: true, name: true, email: true } },
+                submittedBy: { select: { id: true, name: true, email: true } },
+                completedBy: { select: { id: true, name: true, email: true } },
+              },
             },
           },
         },
       },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+      orderBy: { createdAt: 'desc' },
+    });
 
-  const admin = memberships
-    .filter((membership) => membership.role === 'ADMIN')
-    .map((membership) => this.mapProject(membership.project));
+    const admin = memberships
+      .filter((membership) => membership.role === 'ADMIN')
+      .map((membership) => this.mapProject(membership.project));
 
-  const member = memberships
-    .filter((membership) => membership.role === 'MEMBER')
-    .map((membership) => this.mapProject(membership.project));
+    const member = memberships
+      .filter((membership) => membership.role === 'MEMBER')
+      .map((membership) => this.mapProject(membership.project));
 
-  return { admin, member };
-}
+    return { admin, member };
+  }
 
-
-
-  async updateProjectStatus(userId: number, projectId: number, status: ProjectStatus) {
+  async updateProjectStatus(
+    userId: number,
+    projectId: number,
+    status: ProjectStatus,
+  ) {
     const project = await this.ensureProjectAdmin(projectId, userId);
     const data: Prisma.ProjectUpdateInput = { status };
     if (status === ProjectStatus.COMPLETED) {
@@ -368,7 +422,6 @@ export class ProjectsService {
     return { rating };
   }
 
-
   async deleteProject(userId: number, projectId: number) {
     await this.ensureProjectAdmin(projectId, userId);
 
@@ -400,10 +453,3 @@ export class ProjectsService {
     return { success: true };
   }
 }
-
-
-
-
-
-
-

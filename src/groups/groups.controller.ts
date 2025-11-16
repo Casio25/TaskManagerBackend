@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { GroupsService } from './groups.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -9,7 +18,10 @@ import { MailService } from '../mail/mail.service';
 @UseGuards(JwtAuthGuard)
 @Controller('groups')
 export class GroupsController {
-  constructor(private groups: GroupsService, private mail: MailService) {}
+  constructor(
+    private groups: GroupsService,
+    private mail: MailService,
+  ) {}
 
   @Post()
   async create(@Req() req: any, @Body() dto: CreateGroupDto) {
@@ -22,7 +34,11 @@ export class GroupsController {
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: CreateGroupInviteDto,
   ) {
-    const { invite, token } = await this.groups.createInvite(id, req.user.id, dto);
+    const { invite, token } = await this.groups.createInvite(
+      id,
+      req.user.id,
+      dto,
+    );
     const appUrl = process.env.APP_URL || 'http://localhost:3000';
     const link = `${appUrl}/groups/invitations/accept?token=${encodeURIComponent(token)}`;
     await this.mail.sendMail(
@@ -42,10 +58,14 @@ export class GroupsController {
   @Get('mine')
   async myGroups(@Req() req: any) {
     const userId = req.user.id;
-    const admin = await this.groups['prisma'].group.findMany({ where: { adminId: userId } });
-    const memberLinks = await this.groups['prisma'].userGroup.findMany({ where: { userId }, include: { group: true } });
+    const admin = await this.groups['prisma'].group.findMany({
+      where: { adminId: userId },
+    });
+    const memberLinks = await this.groups['prisma'].userGroup.findMany({
+      where: { userId },
+      include: { group: true },
+    });
     const member = memberLinks.map((l) => l.group);
     return { admin, member };
   }
 }
-

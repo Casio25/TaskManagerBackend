@@ -31,7 +31,7 @@ let ProjectsService = class ProjectsService {
         this.prisma = prisma;
     }
     async createProject(userId, dto) {
-        const { tasks, deadline, groupId: requestedGroupId, name, description, color: colorInput } = dto;
+        const { tasks, deadline, groupId: requestedGroupId, name, description, color: colorInput, } = dto;
         const trimmedName = name.trim();
         if (!trimmedName) {
             throw new common_1.BadRequestException('Project name is required');
@@ -40,7 +40,9 @@ let ProjectsService = class ProjectsService {
         const color = (colorInput?.trim() || '#2563EB').toUpperCase();
         let groupId;
         if (requestedGroupId !== undefined) {
-            const group = await this.prisma.group.findUnique({ where: { id: requestedGroupId } });
+            const group = await this.prisma.group.findUnique({
+                where: { id: requestedGroupId },
+            });
             if (!group)
                 throw new common_1.NotFoundException('Group not found');
             if (group.adminId !== userId) {
@@ -90,7 +92,9 @@ let ProjectsService = class ProjectsService {
                         deadline: taskDeadline,
                     },
                 });
-                const uniqueTags = Array.from(new Set(taskDto.tags.map((tag) => tag.trim()).filter((tag) => tag.length > 0)));
+                const uniqueTags = Array.from(new Set(taskDto.tags
+                    .map((tag) => tag.trim())
+                    .filter((tag) => tag.length > 0)));
                 for (const tagName of uniqueTags) {
                     const tag = await tx.tag.upsert({
                         where: { name: tagName },
@@ -113,10 +117,7 @@ let ProjectsService = class ProjectsService {
         const projects = await this.prisma.project.findMany({
             where: {
                 status: client_1.ProjectStatus.COMPLETED,
-                OR: [
-                    { creatorId: userId },
-                    { members: { some: { userId } } },
-                ],
+                OR: [{ creatorId: userId }, { members: { some: { userId } } }],
             },
             include: {
                 completedBy: { select: { id: true, name: true, email: true } },
@@ -167,7 +168,11 @@ let ProjectsService = class ProjectsService {
             status: project.status,
             completedAt: project.completedAt,
             completedBy: project.completedBy
-                ? { id: project.completedBy.id, name: project.completedBy.name, email: project.completedBy.email }
+                ? {
+                    id: project.completedBy.id,
+                    name: project.completedBy.name,
+                    email: project.completedBy.email,
+                }
                 : null,
             tasks: (project.tasks ?? []).map((task) => ({
                 id: task.id,
@@ -178,20 +183,34 @@ let ProjectsService = class ProjectsService {
                 submittedAt: task.submittedAt,
                 completedAt: task.completedAt,
                 submittedBy: task.submittedBy
-                    ? { id: task.submittedBy.id, name: task.submittedBy.name, email: task.submittedBy.email }
+                    ? {
+                        id: task.submittedBy.id,
+                        name: task.submittedBy.name,
+                        email: task.submittedBy.email,
+                    }
                     : null,
                 completedBy: task.completedBy
-                    ? { id: task.completedBy.id, name: task.completedBy.name, email: task.completedBy.email }
+                    ? {
+                        id: task.completedBy.id,
+                        name: task.completedBy.name,
+                        email: task.completedBy.email,
+                    }
                     : null,
                 tags: (task.tags ?? []).map((tag) => tag.tag.name),
                 assignedTo: task.assignedTo
-                    ? { id: task.assignedTo.id, name: task.assignedTo.name, email: task.assignedTo.email }
+                    ? {
+                        id: task.assignedTo.id,
+                        name: task.assignedTo.name,
+                        email: task.assignedTo.email,
+                    }
                     : null,
             })),
         };
     }
     async ensureProjectAdmin(projectId, userId) {
-        const project = await this.prisma.project.findUnique({ where: { id: projectId } });
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId },
+        });
         if (!project)
             throw new common_1.NotFoundException('Project not found');
         if (project.creatorId === userId)
@@ -225,7 +244,9 @@ let ProjectsService = class ProjectsService {
     }
     async acceptInvite(userId, userEmail, dto) {
         const { id, secret } = parseToken(dto.token);
-        const invite = await this.prisma.projectInvitation.findUnique({ where: { id } });
+        const invite = await this.prisma.projectInvitation.findUnique({
+            where: { id },
+        });
         if (!invite)
             throw new common_1.NotFoundException('Invite not found');
         if (invite.status !== 'PENDING')
@@ -246,7 +267,11 @@ let ProjectsService = class ProjectsService {
         });
         const updated = await this.prisma.projectInvitation.update({
             where: { id: invite.id },
-            data: { status: 'ACCEPTED', acceptedById: userId, acceptedAt: new Date() },
+            data: {
+                status: 'ACCEPTED',
+                acceptedById: userId,
+                acceptedAt: new Date(),
+            },
         });
         return { invitation: updated };
     }

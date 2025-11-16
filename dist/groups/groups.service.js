@@ -42,7 +42,9 @@ let GroupsService = class GroupsService {
         return group;
     }
     async ensureGroupAdmin(groupId, userId) {
-        const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+        const group = await this.prisma.group.findUnique({
+            where: { id: groupId },
+        });
         if (!group)
             throw new common_1.NotFoundException('Group not found');
         if (group.adminId !== userId)
@@ -69,7 +71,9 @@ let GroupsService = class GroupsService {
     }
     async acceptInvite(userId, userEmail, dto) {
         const { id, secret } = parseToken(dto.token);
-        const invite = await this.prisma.groupInvitation.findUnique({ where: { id } });
+        const invite = await this.prisma.groupInvitation.findUnique({
+            where: { id },
+        });
         if (!invite)
             throw new common_1.NotFoundException('Invite not found');
         if (invite.status !== 'PENDING')
@@ -90,7 +94,11 @@ let GroupsService = class GroupsService {
         });
         const updated = await this.prisma.groupInvitation.update({
             where: { id: invite.id },
-            data: { status: 'ACCEPTED', acceptedById: userId, acceptedAt: new Date() },
+            data: {
+                status: 'ACCEPTED',
+                acceptedById: userId,
+                acceptedAt: new Date(),
+            },
         });
         return { invitation: updated };
     }

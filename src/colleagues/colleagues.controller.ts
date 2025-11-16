@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseIntPipe,
+  Post,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ColleaguesService } from './colleagues.service';
 import { CreateColleagueDto } from './dto/create-colleague.dto';
@@ -42,10 +52,7 @@ export class ColleaguesController {
   }
 
   @Delete('lists/:id')
-  deleteList(
-    @Req() req: any,
-    @Param('id', ParseIntPipe) id: number,
-  ) {
+  deleteList(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.colleagues.deleteList(req.user.id, id);
   }
 

@@ -1,5 +1,13 @@
 import { TaskStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -42,4 +50,3 @@ export class CreateTaskDto {
   @IsDateString()
   deadline?: string;
 }
-

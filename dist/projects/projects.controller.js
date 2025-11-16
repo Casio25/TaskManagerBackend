@@ -127,6 +127,7 @@ __decorate([
 exports.ProjectsController = ProjectsController = __decorate([
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     (0, common_1.Controller)('projects'),
-    __metadata("design:paramtypes", [projects_service_1.ProjectsService, mail_service_1.MailService])
+    __metadata("design:paramtypes", [projects_service_1.ProjectsService,
+        mail_service_1.MailService])
 ], ProjectsController);
 //# sourceMappingURL=projects.controller.js.map

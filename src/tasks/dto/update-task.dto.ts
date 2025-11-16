@@ -1,5 +1,13 @@
 import { TaskStatus } from '@prisma/client';
-import { IsDateString, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 
 export class UpdateTaskDto {
   @IsOptional()
@@ -34,4 +42,3 @@ export class UpdateTaskDto {
   @Min(1)
   themeId?: number | null;
 }
-

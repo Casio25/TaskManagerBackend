@@ -9,7 +9,9 @@ export class MailService {
 
   constructor() {
     const host = process.env.SMTP_HOST;
-    const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined;
+    const port = process.env.SMTP_PORT
+      ? parseInt(process.env.SMTP_PORT, 10)
+      : undefined;
     const user = process.env.SMTP_USER;
     const pass = process.env.SMTP_PASS;
     this.from = process.env.MAIL_FROM || 'no-reply@example.com';
@@ -22,7 +24,9 @@ export class MailService {
       });
       this.logger.log(`SMTP configured: ${host}:${port}`);
     } else {
-      this.logger.warn('SMTP is not fully configured. Emails will be logged to console.');
+      this.logger.warn(
+        'SMTP is not fully configured. Emails will be logged to console.',
+      );
     }
   }
 
@@ -35,4 +39,3 @@ export class MailService {
     }
   }
 }
-

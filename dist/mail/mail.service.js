@@ -19,7 +19,9 @@ let MailService = MailService_1 = class MailService {
     from;
     constructor() {
         const host = process.env.SMTP_HOST;
-        const port = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined;
+        const port = process.env.SMTP_PORT
+            ? parseInt(process.env.SMTP_PORT, 10)
+            : undefined;
         const user = process.env.SMTP_USER;
         const pass = process.env.SMTP_PASS;
         this.from = process.env.MAIL_FROM || 'no-reply@example.com';

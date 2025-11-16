@@ -1,4 +1,8 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { CreateGroupInviteDto } from './dto/create-group-invite.dto';
@@ -35,16 +39,25 @@ export class GroupsService {
   }
 
   async ensureGroupAdmin(groupId: number, userId: number) {
-    const group = await this.prisma.group.findUnique({ where: { id: groupId } });
+    const group = await this.prisma.group.findUnique({
+      where: { id: groupId },
+    });
     if (!group) throw new NotFoundException('Group not found');
-    if (group.adminId !== userId) throw new ForbiddenException('Only group admin allowed');
+    if (group.adminId !== userId)
+      throw new ForbiddenException('Only group admin allowed');
     return group;
   }
 
-  async createInvite(groupId: number, invitedById: number, dto: CreateGroupInviteDto) {
+  async createInvite(
+    groupId: number,
+    invitedById: number,
+    dto: CreateGroupInviteDto,
+  ) {
     await this.ensureGroupAdmin(groupId, invitedById);
     const expiresInDays = dto.expiresInDays ?? 7;
-    const expiresAt = new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000);
+    const expiresAt = new Date(
+      Date.now() + expiresInDays * 24 * 60 * 60 * 1000,
+    );
     const secret = crypto.randomBytes(24).toString('hex');
     const tokenHash = await bcrypt.hash(secret, 10);
     const invite = await this.prisma.groupInvitation.create({
@@ -60,11 +73,18 @@ export class GroupsService {
     return { invite, token };
   }
 
-  async acceptInvite(userId: number, userEmail: string, dto: AcceptGroupInviteDto) {
+  async acceptInvite(
+    userId: number,
+    userEmail: string,
+    dto: AcceptGroupInviteDto,
+  ) {
     const { id, secret } = parseToken(dto.token);
-    const invite = await this.prisma.groupInvitation.findUnique({ where: { id } });
+    const invite = await this.prisma.groupInvitation.findUnique({
+      where: { id },
+    });
     if (!invite) throw new NotFoundException('Invite not found');
-    if (invite.status !== 'PENDING') throw new ForbiddenException('Invite is not active');
+    if (invite.status !== 'PENDING')
+      throw new ForbiddenException('Invite is not active');
     if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
       throw new ForbiddenException('Invite expired');
     }
@@ -84,7 +104,11 @@ export class GroupsService {
     // mark accepted
     const updated = await this.prisma.groupInvitation.update({
       where: { id: invite.id },
-      data: { status: 'ACCEPTED', acceptedById: userId, acceptedAt: new Date() },
+      data: {
+        status: 'ACCEPTED',
+        acceptedById: userId,
+        acceptedAt: new Date(),
+      },
     });
 
     return { invitation: updated };
